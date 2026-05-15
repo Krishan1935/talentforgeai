@@ -1,0 +1,114 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# =========================
+# Virtual Environment
+# =========================
+venv/
+env/
+.venv/
+ENV/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Testing
+# =========================
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# =========================
+# Type Checking
+# =========================
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Build / Distribution
+# =========================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# SQLite Databases
+# =========================
+*.db
+*.sqlite3
+
+# =========================
+# Alembic (Optional)
+# =========================
+# Ignore generated migration cache only.
+# Keep migration scripts under version control.
+alembic/__pycache__/
+
+# =========================
+# Temporary Files
+# =========================
+tmp/
+temp/
+.cache/
+
+# =========================
+# Static Uploads (Optional)
+# =========================
+uploads/
+media/
+
+# =========================
+# Secrets / Keys
+# =========================
+*.pem
+*.key
+*.crt
+*.p12
+
+# =========================
+# FastAPI Specific
+# =========================
+*.pid
+uvicorn.log
