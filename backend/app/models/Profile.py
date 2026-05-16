@@ -6,7 +6,7 @@ class Profile(Base):
 	__tablename__="profiles"
 
 	id = Column(Integer, primary_key=True, index=True)
-	user_id = Column(Integer, ForeignKey("users.id", on_delete="CASCADE"), unique=True)
+	user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
 	display_name = Column(String(255), nullable=True)
 	bio = Column(Text, nullable=True)
 	avatar_url = Column(Text, nullable=True)

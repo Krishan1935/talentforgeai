@@ -29,3 +29,8 @@ class UserResponse(BaseModel):
 
 
 	model_config = ConfigDict(from_attributes=True)
+
+class AuthResponse(BaseModel):
+	user: UserResponse
+	access_token: str
+	token_type: str = "bearer"
