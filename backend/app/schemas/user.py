@@ -1,15 +1,17 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+from typing import Optional
+from .profile import ProfileResponse
 # USER SCHEMAS
 
 class UserBase(BaseModel):
 	fullname : str
 	username: str
 	email : str 
-	password_hash : str
+	password : str
 class UserCreate(UserBase):
 	pass 
-class User(BaseModel):
+class UserResponse(BaseModel):
 	id : int
 	fullname: str
 	username: str
@@ -21,6 +23,8 @@ class User(BaseModel):
 	is_phone_verified: bool
 	created_at: datetime
 	updated_at: datetime
+
+	profile: Optional[ProfileResponse] = None
 
 
 

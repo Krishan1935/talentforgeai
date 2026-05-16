@@ -10,7 +10,7 @@ class Profile(Base):
 	display_name = Column(String(255), nullable=True)
 	bio = Column(Text, nullable=True)
 	avatar_url = Column(Text, nullable=True)
-	date_of_birth = Column(DateTime(timezone=True), nullable=False)
+	date_of_birth = Column(DateTime(timezone=True), nullable=True)
 	gender = Column(String(20), nullable=True)
 
 	user = relationship("User", back_populates="profile")

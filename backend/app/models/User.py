@@ -32,7 +32,7 @@ class User(Base):
 
 	profile = relationship(
 		"Profile",
-		back_populates="users",
+		back_populates="user",
 		uselist=False,
 		cascade="all, delete-orphan"
 	)
