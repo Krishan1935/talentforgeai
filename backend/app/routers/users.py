@@ -5,7 +5,7 @@ import logging
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
 
 
-from ..database import get_db
+from ..config import get_db
 from .. import schemas, models, crud
 from ..utils import create_access_token, create_refresh_token, verify_password
 from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase

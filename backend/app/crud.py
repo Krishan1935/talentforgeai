@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+import uuid
 
 from . import models, schemas
 from .utils import hash_password
@@ -20,6 +21,24 @@ def create_user(db: Session, user: schemas.UserCreate):
 	)
 
 	db_user.profile = db_profile
+
+	db.add(db_user)
+	db.commit()
+	db.refresh(db_user)
+	return db_user
+
+def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
+
+	base_username = user.fullname.lower().replace(" ", "_")  # "krishan_kumar"
+	username =	f"{base_username}_{str(uuid.uuid4())[:6]}"
+	db_user = User(
+		email= user.email,
+		fullname=user.fullname,
+		username = username,
+		provider=user.provider,
+		provider_id = user.provider_id,
+		password_hash= None
+	)
 
 	db.add(db_user)
 	db.commit()

@@ -1,2 +1,2 @@
-from .user import UserCreate, UserResponse, AuthResponse, AuthBase
+from .user import UserCreate, UserResponse, AuthResponse, AuthBase, OAuthUserCreate
 from .profile import ProfileCreate, ProfileResponse

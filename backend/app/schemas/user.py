@@ -26,9 +26,13 @@ class UserResponse(BaseModel):
 
 	profile: Optional[ProfileResponse] = None
 
-
-
 	model_config = ConfigDict(from_attributes=True)
+
+class OAuthUserCreate(BaseModel):
+	email: str
+	fullname: str
+	provider: str
+	provider_id: str
 
 class AuthBase(BaseModel):
 	identifier : str

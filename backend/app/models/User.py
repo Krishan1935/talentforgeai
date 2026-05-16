@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, func
 from sqlalchemy.orm import relationship
-from ..database import Base 
+from ..config import Base 
 
 class User(Base):
 	__tablename__ = "users"
@@ -9,7 +9,7 @@ class User(Base):
 	fullname=Column(String(255), index=True, nullable=False)
 	username=Column(String(255), unique=True, index=True, nullable=False)
 	email=Column(String(255), unique=True, index=True, nullable=False)
-	password_hash=Column(String(255), nullable=False)
+	password_hash=Column(String(255), nullable=True)
 
 	status=Column(String(50), default='pending')
 	is_active=Column(Boolean, default=False)
@@ -29,6 +29,9 @@ class User(Base):
 	created_at=Column(DateTime(timezone=True), server_default=func.now())
 	updated_at=Column(DateTime(timezone=True), server_default=func.now())
 	deleted_at=Column(DateTime(timezone=True))
+
+	provider=Column(String(255), nullable=True)
+	provider_id=Column(String(255), nullable=True)
 
 	profile = relationship(
 		"Profile",
