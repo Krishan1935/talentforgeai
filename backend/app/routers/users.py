@@ -52,6 +52,7 @@ def register(response: Response, user: schemas.UserCreate, db: Session=Depends(g
 
 
 
-@router.get("/get-all", response_model=UserResponse)
+@router.get("/get-all", response_model=list[UserResponse])
 def fetch_all(response: Response, db: Session=Depends(get_db)):
 	userList = crud.get_all_users(db)
+	return userList
