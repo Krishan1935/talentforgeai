@@ -30,6 +30,10 @@ class UserResponse(BaseModel):
 
 	model_config = ConfigDict(from_attributes=True)
 
+class AuthBase(BaseModel):
+	identifier : str
+	password : str
+
 class AuthResponse(BaseModel):
 	user: UserResponse
 	access_token: str

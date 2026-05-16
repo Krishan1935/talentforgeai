@@ -15,11 +15,14 @@ ALGORITHM = "HS256"
 
 ph = PasswordHasher()
 
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET environment variable is required")
+
 def hash_password(password: str) -> str:
 	return ph.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-	return ph.verify(plain_password, hashed_password)
+	return ph.verify(hashed_password, plain_password)
 
 
 
@@ -52,3 +55,4 @@ def create_refresh_token(data: dict) -> str:
 		JWT_SECRET,
 		algorithm=ALGORITHM
 	)
+	return token

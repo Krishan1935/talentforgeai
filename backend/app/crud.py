@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from . import models, schemas
 from .utils import hash_password
@@ -33,6 +34,12 @@ def get_user_by_email(db: Session, email: str):
 
 def get_user_by_username(db: Session, username: str):
 	return db.query(User).filter(User.username == username)
+
+def get_user_by_identifier(db: Session, identifier : str):
+	return db.query(User).filter(
+		or_(User.email == identifier, 
+			User.username == identifier)
+		).first()
 
 def get_all_users(db: Session):
 	return db.query(User).all()
