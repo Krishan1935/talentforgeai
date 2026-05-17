@@ -33,6 +33,7 @@ class OAuthUserCreate(BaseModel):
 	fullname: str
 	provider: str
 	provider_id: str
+	ip: str
 
 class AuthBase(BaseModel):
 	identifier : str

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import uuid
+from datetime import datetime, timezone
 
 from . import models, schemas
 from .utils import hash_password
@@ -37,7 +38,10 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 		username = username,
 		provider=user.provider,
 		provider_id = user.provider_id,
-		password_hash= None
+		password_hash= None,
+		is_email_verified=True,
+		last_login_at=datetime.now(timezone.utc),
+		last_login_ip = user.ip,
 	)
 
 	db_profile = Profile(

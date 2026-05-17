@@ -11,8 +11,8 @@ class User(Base):
 	email=Column(String(255), unique=True, index=True, nullable=False)
 	password_hash=Column(String(255), nullable=True)
 
-	status=Column(String(50), default='pending')
-	is_active=Column(Boolean, default=False)
+	status=Column(String(50), default='pending') # pending, active suspended, banned, deleted - depends on onboarding requirements (phone and email)
+	is_active=Column(Boolean, default=True)
 	role=Column(String(100), default='user', nullable=False)
 
 	is_email_verified=Column(Boolean, default=False)

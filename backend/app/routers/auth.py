@@ -29,6 +29,8 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	token = await oauth.google.authorize_access_token(request)
 	user_info = token.get("userinfo")
 
+	ip = request.client.host
+
 	if not user_info:
 		raise HTTPException(
 			status_code=400,
@@ -42,7 +44,8 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	        	email= user_info['email'],
 	        	fullname= user_info['name'],
 	        	provider= "google",
-	        	provider_id=user_info['sub']
+	        	provider_id=user_info['sub'],
+	        	ip=ip
 	        ))
 	    except IntegrityError:
 	        db.rollback()
