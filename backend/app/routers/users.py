@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 
 @router.post("/register", response_model=AuthResponse)
-def register(response: Response, user: UserCreate, db: Session=Depends(get_db)):
+def register(request: Request, response: Response, user: UserCreate, db: Session=Depends(get_db)):
 	try:
-		user = crud.create_user(db, user)
+		ip = request.client.host
+		user = crud.create_user(db, user, ip)
 	
 	except IntegrityError as e:
 		db.rollback()

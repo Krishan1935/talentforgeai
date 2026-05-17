@@ -7,14 +7,16 @@ from . import models, schemas
 from .utils import hash_password
 from .models import User, Profile
 
-def create_user(db: Session, user: schemas.UserCreate):
+def create_user(db: Session, user: schemas.UserCreate, ip: str):
 	hashed_password = hash_password(user.password)
 
 	db_user = User(
 		email=user.email, 
 		fullname=user.fullname, 
 		username=user.username,
-		password_hash=hashed_password
+		password_hash=hashed_password,
+		last_login_at=datetime.now(timezone.utc),
+		last_login_ip=ip
 	)
 
 	db_profile = Profile(
