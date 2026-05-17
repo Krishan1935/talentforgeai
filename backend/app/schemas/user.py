@@ -23,6 +23,8 @@ class UserResponse(BaseModel):
 	is_phone_verified: bool
 	created_at: datetime
 	updated_at: datetime
+	last_login_at: datetime
+	last_login_ip: str
 
 	profile: Optional[ProfileResponse] = None
 
@@ -43,3 +45,8 @@ class AuthResponse(BaseModel):
 	user: UserResponse
 	access_token: str
 	token_type: str = "bearer"
+
+
+class LoginInfo(BaseModel):
+	last_login_at: datetime
+	last_login_ip: str

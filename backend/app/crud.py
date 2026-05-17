@@ -56,6 +56,15 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 	db.refresh(db_user)
 	return db_user
 
+def update_last_login_info(db: Session, user, login_info: LoginInfo):
+	user.last_login_at = login_info.last_login_at
+	user.last_login_ip = login_info.last_login_ip
+
+	db.add(user)
+	db.commit()
+	db.refresh(user)
+	return user
+
 def get_user(db: Session, id: int):
 	return db.query(User).filter(User.id == id).first()
 

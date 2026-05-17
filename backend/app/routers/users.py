@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import logging
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
-
+from datetime import datetime, timezone
 
 from ..config import get_db
 from .. import schemas, models, crud
 from ..utils import create_access_token, create_refresh_token, verify_password
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, LoginInfo
 
 router = APIRouter()
 
@@ -58,19 +58,14 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(response: Response, user: AuthBase, db: Session=Depends(get_db)):
-	try:
-		db_user = crud.get_user_by_identifier(db, user.identifier)
+def login(request: Request, response: Response, user: AuthBase, db: Session=Depends(get_db)):
 
-		if not db_user:
-			raise HTTPException(
-				status_code=404,
-				detail="Username or email not found"
-			)
-	except IntegrityError:
+	db_user = crud.get_user_by_identifier(db, user.identifier)
+
+	if not db_user:
 		raise HTTPException(
-			status_code=500,
-			detail="Internal Server Error"
+			status_code=404,
+			detail="Username or email not found"
 		)
 
 	password = user.password
@@ -78,6 +73,11 @@ def login(response: Response, user: AuthBase, db: Session=Depends(get_db)):
 
 	try:
 		verify_password(password, hashed_password)
+
+		db_user = crud.update_last_login_info(db, db_user, LoginInfo(
+			last_login_at=datetime.now(timezone.utc),
+			last_login_ip= request.client.host
+		))
 	except (VerifyMismatchError, InvalidHashError):
 		raise HTTPException(
 			status_code=401,
