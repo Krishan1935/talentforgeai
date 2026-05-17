@@ -40,6 +40,11 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 		password_hash= None
 	)
 
+	db_profile = Profile(
+		display_name= db_user.fullname
+	)
+	db_user.profile = db_profile
+
 	db.add(db_user)
 	db.commit()
 	db.refresh(db_user)

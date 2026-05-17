@@ -13,5 +13,6 @@ oauth.register(
 	server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
 	client_kwargs={
 	"scope": "openid email profile"
-	}
+	},
+	authorize_state=os.getenv("SECRET_KEY")
 )
