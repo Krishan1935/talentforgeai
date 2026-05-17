@@ -39,3 +39,24 @@ class User(Base):
 		uselist=False,
 		cascade="all, delete-orphan"
 	)
+
+	user_sessions=relationship(
+		"UserSessions",
+		back_populates="user",
+		cascade="all, delete-orphan"
+	)
+
+class UserSessions(Base):
+	__tablename__="user_sessions"
+
+	id=Column(Integer, primary_key=True, index=True)
+	user_id=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+	refresh_token_hash=Column(Text, nullable=False)
+	device_name=Column(String(255), nullable=True)
+	ip_address=Column(String(45), nullable=True)
+	is_revoked=Column(Boolean, default=False)
+	created_at=Column(DateTime(timezone=True), server_default=func.now())
+	revoked_at=Column(DateTime(timezone=True), nullable=True)
+	expires_at=Column(DateTime(timezone=True))
+
+	user = relationship("User", back_populates="user_sessions")
