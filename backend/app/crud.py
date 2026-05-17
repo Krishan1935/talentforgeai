@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from . import models, schemas
-from .utils import hash_password
-from .models import User, Profile
+from .utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
+from .models import User, Profile, UserSession
 
-def create_user(db: Session, user: schemas.UserCreate, ip: str):
+def create_user(db: Session, user: schemas.UserCreate):
 	hashed_password = hash_password(user.password)
 
 	db_user = User(
@@ -16,7 +16,6 @@ def create_user(db: Session, user: schemas.UserCreate, ip: str):
 		username=user.username,
 		password_hash=hashed_password,
 		last_login_at=datetime.now(timezone.utc),
-		last_login_ip=ip
 	)
 
 	db_profile = Profile(
@@ -43,7 +42,6 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 		password_hash= None,
 		is_email_verified=True,
 		last_login_at=datetime.now(timezone.utc),
-		last_login_ip = user.ip,
 	)
 
 	db_profile = Profile(
@@ -56,14 +54,17 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 	db.refresh(db_user)
 	return db_user
 
-def update_last_login_info(db: Session, user, login_info: LoginInfo):
-	user.last_login_at = login_info.last_login_at
-	user.last_login_ip = login_info.last_login_ip
-
-	db.add(user)
+def create_user_session(db: Session, user_session: schemas.UserSession):
+	db_session = UserSession(
+		user_id = user_session.user_id,
+		refresh_token_hash = user_session.refresh_token_hash,
+		device_name = user_session.device_name,
+		ip_address = user_session.ip_address,
+		is_revoked=False,
+		expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+	)
+	db.add(db_session)
 	db.commit()
-	db.refresh(user)
-	return user
 
 def get_user(db: Session, id: int):
 	return db.query(User).filter(User.id == id).first()

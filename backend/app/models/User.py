@@ -19,7 +19,7 @@ class User(Base):
 	is_phone_verified=Column(Boolean, default=False)
 
 	last_login_at=Column(DateTime(timezone=True), nullable=True)
-	last_login_ip=Column(String(45), nullable=True)
+	# last_login_ip=Column(String(45), nullable=True)
 	locked_until=Column(DateTime(timezone=True), nullable=True)
 
 	password_changed_at=Column(DateTime(timezone=True),nullable=True)
@@ -41,12 +41,12 @@ class User(Base):
 	)
 
 	user_sessions=relationship(
-		"UserSessions",
+		"UserSession",
 		back_populates="user",
 		cascade="all, delete-orphan"
 	)
 
-class UserSessions(Base):
+class UserSession(Base):
 	__tablename__="user_sessions"
 
 	id=Column(Integer, primary_key=True, index=True)

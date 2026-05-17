@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import logging
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
+from sqlalchemy import func
 from datetime import datetime, timezone
 
 from ..config import get_db
 from .. import schemas, models, crud
-from ..utils import create_access_token, create_refresh_token, verify_password
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, LoginInfo
+from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession
 
 router = APIRouter()
 
@@ -19,8 +20,8 @@ REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 @router.post("/register", response_model=AuthResponse)
 def register(request: Request, response: Response, user: UserCreate, db: Session=Depends(get_db)):
 	try:
-		ip = request.client.host
-		user = crud.create_user(db, user, ip)
+		ip = request.client.host if request.client else None
+		user = crud.create_user(db, user)
 	
 	except IntegrityError as e:
 		db.rollback()
@@ -40,9 +41,19 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 
 		access_token = create_access_token(data)
 		refresh_token = create_refresh_token(data)
+		refresh_token_hash = hash_refresh_token(refresh_token)
 
+		device_name = request.headers.get("X-Device-Name")
+
+		crud.create_user_session(db, UserSession(
+			user_id=user.id,
+			refresh_token_hash=refresh_token_hash,
+			device_name=device_name,
+			ip_address=ip
+		))
 	except Exception as e:
 		logger.exception("Token Generation Failed")
+		
 		raise HTTPException(
 			status_code=500,
 			detail="Account created succesfully, but automatic login failed. Please log in manually"
@@ -61,6 +72,7 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 def login(request: Request, response: Response, user: AuthBase, db: Session=Depends(get_db)):
 
 	db_user = crud.get_user_by_identifier(db, user.identifier)
+	ip = request.client.host if request.client else None
 
 	if not db_user:
 		raise HTTPException(
@@ -73,11 +85,6 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 	try:
 		verify_password(password, hashed_password)
-
-		db_user = crud.update_last_login_info(db, db_user, LoginInfo(
-			last_login_at=datetime.now(timezone.utc),
-			last_login_ip= request.client.host
-		))
 	except (VerifyMismatchError, InvalidHashError):
 		raise HTTPException(
 			status_code=401,
@@ -91,6 +98,19 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	}
 	access_token = create_access_token(data)
 	refresh_token = create_refresh_token(data)
+	refresh_token_hash = hash_refresh_token(refresh_token)
+
+	device_name = request.headers.get("X-Device-Name")
+
+	crud.create_user_session(db, UserSession(
+		user_id=db_user.id,
+		refresh_token_hash=refresh_token_hash,
+		device_name=device_name,
+		ip_address=ip
+	))
+	db_user.last_login_at = datetime.now(timezone.utc)
+	db.commit()
+	db.refresh(db_user)
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 	return {

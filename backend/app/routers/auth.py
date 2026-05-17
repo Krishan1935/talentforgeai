@@ -8,8 +8,8 @@ import logging
 
 from ..config import get_db, oauth
 from .. import schemas, models, crud
-from ..utils import create_access_token, create_refresh_token, verify_password
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, OAuthUserCreate
+from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, OAuthUserCreate, UserSession
 
 router = APIRouter()
 
@@ -45,7 +45,6 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	        	fullname= user_info['name'],
 	        	provider= "google",
 	        	provider_id=user_info['sub'],
-	        	ip=ip
 	        ))
 	    except IntegrityError:
 	        db.rollback()
@@ -59,8 +58,18 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	}
 	access_token = create_access_token(data)
 	refresh_token = create_refresh_token(data)
+	refresh_token_hash = hash_refresh_token(refresh_token)
 
-	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token)
+	device_name = request.headers.get("X-Device-Name")
+
+	crud.create_user_session(db, UserSession(
+		user_id=db_user.id,
+		refresh_token_hash=refresh_token_hash,
+		device_name=device_name,
+		ip_address=ip
+	))
+
+	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
 	return {
 		"user": db_user,

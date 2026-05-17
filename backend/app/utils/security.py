@@ -56,3 +56,6 @@ def create_refresh_token(data: dict) -> str:
 		algorithm=ALGORITHM
 	)
 	return token
+
+def hash_refresh_token(token: str) -> str:
+	return ph.hash(token)

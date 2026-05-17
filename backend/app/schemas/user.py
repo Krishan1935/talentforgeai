@@ -24,7 +24,6 @@ class UserResponse(BaseModel):
 	created_at: datetime
 	updated_at: datetime
 	last_login_at: datetime
-	last_login_ip: str
 
 	profile: Optional[ProfileResponse] = None
 
@@ -35,7 +34,6 @@ class OAuthUserCreate(BaseModel):
 	fullname: str
 	provider: str
 	provider_id: str
-	ip: str
 
 class AuthBase(BaseModel):
 	identifier : str
@@ -46,7 +44,8 @@ class AuthResponse(BaseModel):
 	access_token: str
 	token_type: str = "bearer"
 
-
-class LoginInfo(BaseModel):
-	last_login_at: datetime
-	last_login_ip: str
+class UserSession(BaseModel):
+	user_id: int
+	refresh_token_hash: str
+	device_name: Optional[str] = None
+	ip_address: str
