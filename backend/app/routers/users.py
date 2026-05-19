@@ -80,6 +80,12 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 			detail="Username or email not found"
 		)
 
+	if db_user.provider == 'google':
+		raise HTTPException(
+			status_code=400,
+			detail="This account was created using Google Sign-In. Please continue with Google."
+		)
+
 	password = user.password
 	hashed_password = db_user.password_hash 
 
