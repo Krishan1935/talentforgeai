@@ -9,7 +9,7 @@ import logging
 from ..config import get_db, oauth
 from .. import schemas, models, crud
 from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, OAuthUserCreate, UserSession
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, OAuthUserCreate, UserSession, AuthAPIResponse
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ async def google_login(request: Request):
 	redirect_uri = "http://localhost:8000/auth/google/callback"
 	return await oauth.google.authorize_redirect(request, redirect_uri)
 
-@router.get("/google/callback", name="google_callback", response_model=AuthResponse)
+@router.get("/google/callback", name="google_callback", response_model=AuthAPIResponse)
 async def google_callback(request: Request, response: Response, db: Session = Depends(get_db)):
 	token = await oauth.google.authorize_access_token(request)
 	user_info = token.get("userinfo")
@@ -71,8 +71,8 @@ async def google_callback(request: Request, response: Response, db: Session = De
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return {
-		"user": db_user,
-		"access_token": access_token,
-		"token_type": "bearer"
-	}
+	return AuthAPIResponse(
+		success=True,
+		message="Googel Login Succesful",
+		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
+	)

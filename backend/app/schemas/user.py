@@ -49,3 +49,8 @@ class UserSession(BaseModel):
 	refresh_token_hash: str
 	device_name: Optional[str] = None
 	ip_address: str
+
+class AuthAPIResponse(BaseModel):
+	success: bool
+	message: str
+	data: Optional[AuthResponse] = None
