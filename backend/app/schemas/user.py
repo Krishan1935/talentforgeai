@@ -54,3 +54,5 @@ class APIResponse(BaseModel):
 	success: bool
 	message: str
 	data: Optional[Any] = None
+
+	model_config = ConfigDict(from_attributes=True)

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -127,7 +128,12 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	)
 
 
-@router.get("/get-all", response_model=list[UserResponse])
+@router.get("/get-all", response_model=APIResponse)
 def fetch_all(response: Response, db: Session=Depends(get_db)):
 	userList = crud.get_all_users(db)
-	return userList
+	users = jsonable_encoder(userList)
+	return APIResponse(
+		success= True,
+		message= "All Users",
+		data= users
+	)
