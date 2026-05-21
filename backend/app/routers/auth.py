@@ -22,7 +22,8 @@ REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 async def google_login(request: Request):
 	# redirect_uri = request.url_for("google_callback")
 	redirect_uri = "http://localhost:8000/auth/google/callback"
-	return await oauth.google.authorize_redirect(request, redirect_uri)
+	response = await oauth.google.authorize_redirect(request, redirect_uri)
+	return response
 
 @router.get("/google/callback", name="google_callback", response_model=APIResponse)
 async def google_callback(request: Request, response: Response, db: Session = Depends(get_db)):

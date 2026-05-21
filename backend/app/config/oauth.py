@@ -14,5 +14,4 @@ oauth.register(
 	client_kwargs={
 	"scope": "openid email profile"
 	},
-	authorize_state=os.getenv("SECRET_KEY")
 )
