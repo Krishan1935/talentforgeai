@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 from .profile import ProfileResponse
 # USER SCHEMAS
 
@@ -50,7 +50,7 @@ class UserSession(BaseModel):
 	device_name: Optional[str] = None
 	ip_address: str
 
-class AuthAPIResponse(BaseModel):
+class APIResponse(BaseModel):
 	success: bool
 	message: str
-	data: Optional[AuthResponse] = None
+	data: Optional[Any] = None

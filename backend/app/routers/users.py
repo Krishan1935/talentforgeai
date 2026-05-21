@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from ..config import get_db
 from .. import schemas, models, crud
 from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession, AuthAPIResponse
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession, APIResponse
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 
-@router.post("/register", response_model=AuthAPIResponse)
+@router.post("/register", response_model=APIResponse)
 def register(request: Request, response: Response, user: UserCreate, db: Session=Depends(get_db)):
 	try:
 		ip = request.client.host if request.client else None
@@ -61,14 +61,14 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 
 	response.set_cookie(key='talentforge_refresh_token', value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return AuthAPIResponse(
+	return APIResponse(
 		success=True,
 		message="Account Created Succesfully",
 		data=AuthResponse(user=user, access_token=access_token, token_type="bearer")
 	)
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=APIResponse)
 def login(request: Request, response: Response, user: AuthBase, db: Session=Depends(get_db)):
 
 	db_user = crud.get_user_by_identifier(db, user.identifier)
@@ -120,7 +120,7 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return AuthAPIResponse(
+	return APIResponse(
 		success=True,
 		message="Logged In Succesfully",
 		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
