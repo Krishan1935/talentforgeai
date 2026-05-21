@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 
 from ..config import get_db
 from .. import schemas, models, crud
-from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession, APIResponse
+from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token,get_current_user
+from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession, APIResponse, TokenData
 
 router = APIRouter()
 
@@ -127,6 +127,19 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
 	)
 
+
+@router.post("/logout", response_model=APIResponse)
+async def logout(request: Request, response: Response, user: TokenData = Depends(get_currect_user), db: Session = Depends(get_db)):
+
+	crud.delete_user_session(db, user_id=user.id)
+
+	response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME)
+
+	return APIResponse(
+		success=True,
+		message="Logged Out",
+		data=jsonable_encoder(response)
+	)
 
 @router.get("/get-all", response_model=APIResponse)
 def fetch_all(response: Response, db: Session=Depends(get_db)):

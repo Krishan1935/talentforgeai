@@ -56,3 +56,8 @@ class APIResponse(BaseModel):
 	data: Optional[Any] = None
 
 	model_config = ConfigDict(from_attributes=True)
+
+class TokenData(BaseModel):
+	id: int
+	email: str 
+	username: str 

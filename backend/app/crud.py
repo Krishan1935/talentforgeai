@@ -66,6 +66,12 @@ def create_user_session(db: Session, user_session: schemas.UserSession):
 	db.add(db_session)
 	db.commit()
 
+def delete_user_session(db: Session, user_id: int):
+	session = db.query(UserSession)\
+		.filter(UserSession.user_id == user_id)\
+		.order_by(UserSession.created_at.desc())\
+		.first()
+
 def get_user(db: Session, id: int):
 	return db.query(User).filter(User.id == id).first()
 
