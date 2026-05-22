@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, delete, select
 import uuid
 from datetime import datetime, timezone, timedelta
 
@@ -71,6 +71,10 @@ def delete_user_session(db: Session, user_id: int):
 		.filter(UserSession.user_id == user_id)\
 		.order_by(UserSession.created_at.desc())\
 		.first()
+
+	print("Sessions: ", session)
+
+
 
 def get_user(db: Session, id: int):
 	return db.query(User).filter(User.id == id).first()

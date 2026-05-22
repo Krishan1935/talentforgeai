@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, Request, Form
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -129,7 +129,7 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 
 @router.post("/logout", response_model=APIResponse)
-async def logout(request: Request, response: Response, user: TokenData = Depends(get_currect_user), db: Session = Depends(get_db)):
+async def logout(request: Request, response: Response, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
 
 	crud.delete_user_session(db, user_id=user.id)
 

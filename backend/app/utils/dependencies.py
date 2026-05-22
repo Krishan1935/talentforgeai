@@ -2,14 +2,16 @@ from fastapi import Depends, HTTPException, status, Cookie, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from typing import Optional
 
 bearer_scheme = HTTPBearer()
 
 def get_current_user(
     request: Request,
-    talentforge_access_token: Optional[str] = Cookie(default=None)
-) -> TokenData:
+    talentforge_access_token: Optional[str] = Cookie(default=None)) -> TokenData:
+    print("COOKIE: ", talentforge_access_token)
     token = None
     header = request.headers.get("Authorization")
     if header and header.startswith("Bearer "):
@@ -23,7 +25,7 @@ def get_current_user(
     try:
 
         payload = jwt.decode(
-            credentials.credentials,
+            token,
             os.getenv("SECRET_KEY"),
             algorithms=["HS256"]
         )
