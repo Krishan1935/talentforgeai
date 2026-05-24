@@ -16,6 +16,7 @@ def create_user(db: Session, user: schemas.UserCreate):
 		username=user.username,
 		password_hash=hashed_password,
 		last_login_at=datetime.utcnow(),
+		provider="local"
 	)
 
 	db_profile = Profile(
@@ -118,7 +119,8 @@ def update_password(db: Session, password: str, user: User, session_id: int):
 	hashed = hash_password(password)
 	
 	user.password_hash = hashed
-
+	user.password_changed_at = datetime.utcnow()
+ 
 	db.query(PasswordResetToken).filter(PasswordResetToken.id == session_id)\
 	.update({
 		PasswordResetToken.used : True,

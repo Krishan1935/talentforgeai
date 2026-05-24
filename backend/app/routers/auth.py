@@ -96,6 +96,13 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 
 		if not user:
 			raise HTTPException(status_code=404, detail="Email not found!")
+		
+		if user.provider != 'local':
+			return APIResponse(
+				success=False,
+				message="Please login using google.",
+				data=None
+			)
 
 		try:
 			token, token_hash = create_password_reset_token()

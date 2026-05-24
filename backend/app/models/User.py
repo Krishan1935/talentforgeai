@@ -23,8 +23,6 @@ class User(Base):
 	locked_until=Column(DateTime(timezone=True), nullable=True)
 
 	password_changed_at=Column(DateTime(timezone=True),nullable=True)
-	password_reset_token=Column(Text, nullable=True)
-	password_reset_expires_at=Column(DateTime(timezone=True), nullable=True)
 
 	created_at=Column(DateTime(timezone=True), server_default=func.now())
 	updated_at=Column(DateTime(timezone=True), server_default=func.now())
