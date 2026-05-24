@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, delete, select, func
 import uuid
 from datetime import datetime, timezone, timedelta
-
+from typing import Optional
 from app import models, schemas
 from app.utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
 from app.models import User, Profile, UserSession, PasswordResetToken
@@ -61,7 +61,7 @@ def delete_user_session(db: Session, user_id: int):
 
 
 
-def save_password_reset_token(db: Session, token: str, user_id: int):
+def save_password_reset_token(db: Session, user_id: int, token: Optional[str] = ""):
 	db_token = PasswordResetToken(
 		user_id= user_id,
 		token_hash= token,
@@ -78,23 +78,26 @@ def get_password_reset_token(db: Session, token: str):
 	.first()
 
 
-def update_password(db: Session, password: str, user: User, session_id: int):
-    hashed = hash_password(password)
+def update_password(db: Session, password: str, user: User):
+	hashed = hash_password(password)
 
-    user.password_hash = hashed
-    user.password_changed_at = datetime.utcnow()
+	user.password_hash = hashed
+	user.password_changed_at = datetime.utcnow()
 
-    db.query(PasswordResetToken).filter(PasswordResetToken.id == session_id)\
-    .update({
-        PasswordResetToken.used : True,
-    })
+	reset_session = db.query(PasswordResetToken).filter(PasswordResetToken.user_id == user.id)\
+	.order_by(PasswordResetToken.created_at.desc()).first()
 
-    db.query(UserSession).filter(UserSession.user_id == user.id)\
-    .update({
-        UserSession.is_revoked: True,
-        UserSession.revoked_at: datetime.utcnow()
-    })
+	if not reset_session:
+		reset_session = get_password_reset_token(db, user_id=user.id)
 
-    db.commit()
-    db.refresh(user)
-    return user
+	reset_session.used = True
+
+	db.query(UserSession).filter(UserSession.user_id == user.id)\
+	.update({
+		UserSession.is_revoked: True,
+		UserSession.revoked_at: datetime.utcnow()
+	})
+
+	db.commit()
+	db.refresh(user)
+	return user

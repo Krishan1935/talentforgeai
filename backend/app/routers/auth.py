@@ -6,19 +6,21 @@ from fastapi.encoders import jsonable_encoder
 import jwt
 import os
 import logging
+from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timezone
 
 from app.config import get_db, oauth, send_mail, EmailSchema
 from app import schemas, models
 from app.services import crud
 from app.utils import (create_password_reset_token, 
-	hash_password_reset_token)
+	hash_password_reset_token, hash_password)
 from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
 from app.schemas import (UserResponse, UserCreate, 
 	AuthResponse, AuthBase, 
 	OAuthUserCreate, UserSession, 
 	APIResponse, ForgotPasswordTokenRequest, 
-	ForgotPasswordTokenResponse, ForgotPasswordRequest)
+	ForgotPasswordRequest,
+	ChangePasswordRequest)
 
 router = APIRouter()
 
@@ -124,9 +126,10 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 		try:
 			token, token_hash = create_password_reset_token()
 
-			saved = crud.save_password_reset_token(db, token_hash, user.id)
+			saved = crud.save_password_reset_token(db, user.id, token_hash)
 		except Exception as e:
 			db.rollback()
+			# print(e)
 			return JSONResponse(
 				status_code=500,
 				content=jsonable_encoder(APIResponse(
@@ -195,7 +198,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 		)
 
 	try: 
-		crud.update_password(db, data.new_password, user, reset_session.id)
+		crud.update_password(db, data.new_password, user)
 	except IntegrityError as e:
 		db.rollback()
 		return JSONResponse(
@@ -213,6 +216,93 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Internal Server Error",
+				data=None
+			))
+		)
+
+	body = """
+	Hello,
+
+	Your password was successfully updated.
+
+	If you made this change, no further action is required.
+
+	If you did not change your password, please secure your account immediately and contact support.
+
+	For security reasons, all active sessions may have been signed out.
+
+	Thank you."""
+
+	subject="Your Password Has Been Updated"
+
+	await send_mail(subject, body, EmailSchema(email=[user.email]))
+
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
+		success=True,
+		message="Password Updated Succesfully",
+		data=None
+	)))
+
+
+@router.post("/password/change-password", response_model=APIResponse)
+async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_db)):
+	print("\n\n body: ", body)
+	user = crud.get_user_by_email(db, body.email)
+
+	if not user:
+		return JSONResponse(
+			status_code=404,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="User not found",
+				data=None
+			))
+		)
+	
+	if user.provider != "local":
+		return JSONResponse(
+			status_code=400,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Please login using google",
+				data=None
+			))
+		)
+	
+	if body.new_password != body.confirm_password:
+		return JSONResponse(
+			status_code=400,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Both passwords must match",
+				data=None
+			))
+		)
+
+
+	try:
+		verify_password(body.old_password, user.password_hash)
+	except VerifyMismatchError:
+		return JSONResponse(
+			status_code=401,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Incorrect Old Password",
+				data=None
+			))
+		)
+
+	try: 
+		crud.update_password(db, body.new_password, user)
+	except IntegrityError as e:
+		db.rollback()
+		return JSONResponse(
+			status_code=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Couldn't Update Password",
 				data=None
 			))
 		)

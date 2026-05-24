@@ -32,18 +32,15 @@ class TokenData(BaseModel):
 class ForgotPasswordTokenRequest(BaseModel):
 	email: str
 
-class ForgotPasswordTokenResponse(BaseModel):
-	id: int
-	token_hash: str
-	expires_at: datetime
-	used: bool
-	user_id: int
-
-	model_config = ConfigDict(from_attributes=True)
-
 class ForgotPasswordRequest(BaseModel):
 	new_password: str
 	confirm_password: str 
+
+class ChangePasswordRequest(BaseModel):
+	email: str
+	old_password: str
+	new_password: str
+	confirm_password: str
 
 from .user import UserResponse
 
