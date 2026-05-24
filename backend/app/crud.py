@@ -15,7 +15,7 @@ def create_user(db: Session, user: schemas.UserCreate):
 		fullname=user.fullname, 
 		username=user.username,
 		password_hash=hashed_password,
-		last_login_at=datetime.now(timezone.utc),
+		last_login_at=datetime.utcnow(),
 	)
 
 	db_profile = Profile(
@@ -41,7 +41,7 @@ def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 		provider_id = user.provider_id,
 		password_hash= None,
 		is_email_verified=True,
-		last_login_at=datetime.now(timezone.utc),
+		last_login_at=datetime.utcnow(),
 	)
 
 	db_profile = Profile(
@@ -61,7 +61,7 @@ def create_user_session(db: Session, user_session: schemas.UserSession):
 		device_name = user_session.device_name,
 		ip_address = user_session.ip_address,
 		is_revoked=False,
-		expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+		expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 	)
 	db.add(db_session)
 	db.commit()
@@ -102,10 +102,34 @@ def save_password_reset_token(db: Session, token: str, user_id: int):
 	db_token = PasswordResetToken(
 		user_id= user_id,
 		token_hash= token,
-		expires_at= datetime.now(timezone.utc) + timedelta(minutes=15)
+		expires_at= datetime.utcnow() + timedelta(minutes=15)
 	)
 
 	db.add(db_token)
 	db.commit()
 	db.refresh(db_token)
 	return db_token
+
+def get_password_reset_token(db: Session, token: str):
+	return db.query(PasswordResetToken).filter(PasswordResetToken.token_hash == token)\
+	.first()
+
+def update_password(db: Session, password: str, user: User, session_id: int):
+	hashed = hash_password(password)
+	
+	user.password_hash = hashed
+
+	db.query(PasswordResetToken).filter(PasswordResetToken.id == session_id)\
+	.update({
+		PasswordResetToken.used : True,
+	})
+
+	db.query(UserSession).filter(UserSession.user_id == user.id)\
+	.update({
+		UserSession.is_revoked: True,
+		UserSession.revoked_at: datetime.utcnow()
+	})
+
+	db.commit()
+	db.refresh(user)
+	return user

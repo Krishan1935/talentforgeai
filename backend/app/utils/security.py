@@ -56,12 +56,14 @@ def create_refresh_token(data: dict) -> str:
 	)
 	return token
 
-def create_password_refresh_token() -> str:
+def create_password_reset_token() -> str:
 	token = secrets.token_urlsafe(32)
 
 	token_hash = hashlib.sha256(token.encode()).hexdigest()
-	return token_hash
+	return token, token_hash
 
+def hash_password_reset_token(token: str)->str:
+	return hashlib.sha256(token.encode()).hexdigest()
 
 def hash_refresh_token(token: str) -> str:
 	return ph.hash(token)

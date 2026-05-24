@@ -5,12 +5,18 @@ from sqlalchemy.exc import IntegrityError
 import jwt
 import os
 import logging
+from datetime import datetime, timezone
 
 from ..config import get_db, oauth, send_mail, EmailSchema
 from .. import schemas, models, crud
-from ..utils import create_password_refresh_token
+from ..utils import (create_password_reset_token, 
+	hash_password_reset_token)
 from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
-from ..schemas import UserResponse, UserCreate, AuthResponse, AuthBase, OAuthUserCreate, UserSession, APIResponse, ForgotPasswordRequest, ForgotPasswordResponse
+from ..schemas import (UserResponse, UserCreate, 
+	AuthResponse, AuthBase, 
+	OAuthUserCreate, UserSession, 
+	APIResponse, ForgotPasswordTokenRequest, 
+	ForgotPasswordTokenResponse, ForgotPasswordRequest)
 
 router = APIRouter()
 
@@ -80,8 +86,8 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	)
 
 # forgot password
-@router.post("/password/reset")
-async def reset_password(request: Request, response: Response, body: ForgotPasswordRequest, db:Session = Depends(get_db)):
+@router.post("/password/reset", response_model=APIResponse)
+async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = Depends(get_db)):
 	try:
 		email = body.email
 		print("email: ", email)
@@ -92,13 +98,14 @@ async def reset_password(request: Request, response: Response, body: ForgotPassw
 			raise HTTPException(status_code=404, detail="Email not found!")
 
 		try:
-			reset_token = create_password_refresh_token()
+			token, token_hash = create_password_reset_token()
 
-			saved = crud.save_password_reset_token(db, reset_token, user.id)
+			saved = crud.save_password_reset_token(db, token_hash, user.id)
 		except Exception as e:
+			db.rollback()
 			raise HTTPException(status_code=500, detail="Couldn't create or save token")
 
-		body = f"Your password reset link is : http://localhost:8000/auth/password/reset-password/{saved.token_hash}"
+		body = f"Your password reset link is : http://localhost:8000/auth/password/reset-password/{token}"
 		mail_response = await send_mail("Password Reset Token", body, email=EmailSchema(email=[email]))
 
 		return APIResponse(
@@ -108,3 +115,55 @@ async def reset_password(request: Request, response: Response, body: ForgotPassw
 		)
 	except Exception as e:
 		print(e)
+		raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/password/reset-password/{token}", response_model=APIResponse)
+async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+	token_hash = hash_password_reset_token(token)
+	reset_session = crud.get_password_reset_token(db, token_hash)
+	print("\n\n TOKEN HASH: ", token_hash)
+	print("\n\n RESET SESSION ", reset_session.expires_at.tzinfo)
+
+
+	if not reset_session or reset_session.used or reset_session.expires_at < datetime.utcnow():
+		raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+	if data.new_password != data.confirm_password:
+		raise HTTPException(status_code=400, detail="Both the passwords must match")
+
+	user = crud.get_user(db, reset_session.user_id)
+
+	if not user:
+		raise HTTPException(status_code=404, detail="User does not exist")
+
+	try: 
+		crud.update_password(db, data.new_password, user, reset_session.id)
+	except IntegrityError as e:
+		db.rollback()
+		raise HTTPException(status_code=500, detail="Couldn't Update Password")
+	except Exception as e:
+		print(e)
+		raise HTTPException(status_code=500, detail="Something went wrong")
+
+	body = """
+	Hello,
+
+	Your password was successfully updated.
+
+	If you made this change, no further action is required.
+
+	If you did not change your password, please secure your account immediately and contact support.
+
+	For security reasons, all active sessions may have been signed out.
+
+	Thank you."""
+
+	subject="Your Password Has Been Updated"
+
+	await send_mail(subject, body, EmailSchema(email=[user.email]))
+
+	return APIResponse(
+		success=True,
+		message="Password Updated Succesfully",
+		data=None
+	)
