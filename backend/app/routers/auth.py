@@ -8,12 +8,13 @@ import os
 import logging
 from datetime import datetime, timezone
 
-from ..config import get_db, oauth, send_mail, EmailSchema
-from .. import schemas, models, crud
-from ..utils import (create_password_reset_token, 
+from app.config import get_db, oauth, send_mail, EmailSchema
+from app import schemas, models
+from app.services import crud
+from app.utils import (create_password_reset_token, 
 	hash_password_reset_token)
-from ..utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
-from ..schemas import (UserResponse, UserCreate, 
+from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
+from app.schemas import (UserResponse, UserCreate, 
 	AuthResponse, AuthBase, 
 	OAuthUserCreate, UserSession, 
 	APIResponse, ForgotPasswordTokenRequest, 

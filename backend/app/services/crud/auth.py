@@ -3,32 +3,12 @@ from sqlalchemy import or_, delete, select, func
 import uuid
 from datetime import datetime, timezone, timedelta
 
-from . import models, schemas
-from .utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
-from .models import User, Profile, UserSession, PasswordResetToken
+from app import models, schemas
+from app.utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
+from app.models import User, Profile, UserSession, PasswordResetToken
 
-def create_user(db: Session, user: schemas.UserCreate):
-	hashed_password = hash_password(user.password)
 
-	db_user = User(
-		email=user.email, 
-		fullname=user.fullname, 
-		username=user.username,
-		password_hash=hashed_password,
-		last_login_at=datetime.utcnow(),
-		provider="local"
-	)
 
-	db_profile = Profile(
-		display_name = db_user.fullname
-	)
-
-	db_user.profile = db_profile
-
-	db.add(db_user)
-	db.commit()
-	db.refresh(db_user)
-	return db_user
 
 def create_oauth_user(db: Session, user: schemas.OAuthUserCreate):
 
@@ -80,24 +60,6 @@ def delete_user_session(db: Session, user_id: int):
 
 
 
-def get_user(db: Session, id: int):
-	return db.query(User).filter(User.id == id).first()
-
-def get_user_by_email(db: Session, email: str):
-	return db.query(User).filter(User.email == email).first()
-
-def get_user_by_username(db: Session, username: str):
-	return db.query(User).filter(User.username == username).first()
-
-def get_user_by_identifier(db: Session, identifier : str):
-	return db.query(User).filter(
-		or_(User.email == identifier, 
-			User.username == identifier)
-		).first()
-
-def get_all_users(db: Session):
-	return db.query(User).all()
-
 
 def save_password_reset_token(db: Session, token: str, user_id: int):
 	db_token = PasswordResetToken(
@@ -115,23 +77,24 @@ def get_password_reset_token(db: Session, token: str):
 	return db.query(PasswordResetToken).filter(PasswordResetToken.token_hash == token)\
 	.first()
 
+
 def update_password(db: Session, password: str, user: User, session_id: int):
-	hashed = hash_password(password)
-	
-	user.password_hash = hashed
-	user.password_changed_at = datetime.utcnow()
- 
-	db.query(PasswordResetToken).filter(PasswordResetToken.id == session_id)\
-	.update({
-		PasswordResetToken.used : True,
-	})
+    hashed = hash_password(password)
 
-	db.query(UserSession).filter(UserSession.user_id == user.id)\
-	.update({
-		UserSession.is_revoked: True,
-		UserSession.revoked_at: datetime.utcnow()
-	})
+    user.password_hash = hashed
+    user.password_changed_at = datetime.utcnow()
 
-	db.commit()
-	db.refresh(user)
-	return user
+    db.query(PasswordResetToken).filter(PasswordResetToken.id == session_id)\
+    .update({
+        PasswordResetToken.used : True,
+    })
+
+    db.query(UserSession).filter(UserSession.user_id == user.id)\
+    .update({
+        UserSession.is_revoked: True,
+        UserSession.revoked_at: datetime.utcnow()
+    })
+
+    db.commit()
+    db.refresh(user)
+    return user
