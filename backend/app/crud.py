@@ -76,7 +76,6 @@ def delete_user_session(db: Session, user_id: int):
 	session.revoked_at = func.now()
 	db.commit()
 	db.refresh(session)
-	print("Sessions: ", session)
 
 
 

@@ -20,7 +20,6 @@ def get_current_user(request: Request, talentforge_access_token: Optional[str] =
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        print("TOKEN: ", token)
         payload = jwt.decode(
             token,
             os.getenv("JWT_SECRET"),
