@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from fastapi.encoders import jsonable_encoder
 import jwt
 import os
 import logging
@@ -40,9 +41,13 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	ip = request.client.host
 
 	if not user_info:
-		raise HTTPException(
+		return JSONResponse(
 			status_code=400,
-			detail="Failed to fetch user info from google"
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Failed to fetch user info from google",
+				data=None
+			))
 		)
 
 	db_user = crud.get_user_by_email(db, email=user_info['email'])
@@ -79,11 +84,13 @@ async def google_callback(request: Request, response: Response, db: Session = De
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return APIResponse(
-		success=True,
-		message="Googel Login Succesful",
-		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
-	)
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
+			success=True,
+			message="Googel Login Succesful",
+			data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
+	)))
 
 # forgot password
 @router.post("/password/reset", response_model=APIResponse)
@@ -95,14 +102,23 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 		print(user)
 
 		if not user:
-			raise HTTPException(status_code=404, detail="Email not found!")
+			return JSONResponse(
+				status_code=404,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="Email not found!",
+					data=None
+				))
+			)
 		
 		if user.provider != 'local':
-			return APIResponse(
+			return JSONResponse(
+				status=400,
+				content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Please login using google.",
 				data=None
-			)
+			)))
 
 		try:
 			token, token_hash = create_password_reset_token()
@@ -110,47 +126,95 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			saved = crud.save_password_reset_token(db, token_hash, user.id)
 		except Exception as e:
 			db.rollback()
-			raise HTTPException(status_code=500, detail="Couldn't create or save token")
+			return JSONResponse(
+				status_code=500,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="Couldn't create or save token",
+					data=None
+				))
+			)
 
 		body = f"Your password reset link is : http://localhost:8000/auth/password/reset-password/{token}"
 		mail_response = await send_mail("Password Reset Token", body, email=EmailSchema(email=[email]))
 
-		return APIResponse(
+		return JSONResponse(
+			status_code=500,
+			content=jsonable_encoder(APIResponse(
 			success=True,
 			message="A password reset link has been sent on your mail.",
 			data=None
-		)
+		)))
 	except Exception as e:
 		print(e)
-		raise HTTPException(status_code=500, detail=str(e))
+		return JSONResponse(
+			status_code=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Internal Server Error",
+				data=None
+			))
+		)
 
 @router.post("/password/reset-password/{token}", response_model=APIResponse)
 async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
 	token_hash = hash_password_reset_token(token)
 	reset_session = crud.get_password_reset_token(db, token_hash)
-	print("\n\n TOKEN HASH: ", token_hash)
-	print("\n\n RESET SESSION ", reset_session.expires_at.tzinfo)
-
 
 	if not reset_session or reset_session.used or reset_session.expires_at < datetime.utcnow():
-		raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+		return JSONResponse(
+			status=400,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Invalid or expired password reset token",
+				data=None
+			))
+		)
 
 	if data.new_password != data.confirm_password:
-		raise HTTPException(status_code=400, detail="Both the passwords must match")
+		return JSONResponse(
+			status=400,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Both the passwords must match",
+				data=None
+			))
+		)
 
 	user = crud.get_user(db, reset_session.user_id)
 
 	if not user:
-		raise HTTPException(status_code=404, detail="User does not exist")
+		return JSONResponse(
+			status=404,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="User does not exist",
+				data=None
+			))
+		)
 
 	try: 
 		crud.update_password(db, data.new_password, user, reset_session.id)
 	except IntegrityError as e:
 		db.rollback()
-		raise HTTPException(status_code=500, detail="Couldn't Update Password")
+		return JSONResponse(
+			status=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Couldn't Update Password",
+				data=None
+			))
+		)
 	except Exception as e:
 		print(e)
-		raise HTTPException(status_code=500, detail="Something went wrong")
+		return JSONResponse(
+			status=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Internal Server Error",
+				data=None
+			))
+		)
 
 	body = """
 	Hello,
@@ -169,8 +233,10 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 
 	await send_mail(subject, body, EmailSchema(email=[user.email]))
 
-	return APIResponse(
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
 		success=True,
 		message="Password Updated Succesfully",
 		data=None
-	)
+	)))

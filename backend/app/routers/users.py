@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Request, Form
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -28,9 +29,13 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 		db.rollback()
 
 		logger.warning("Registration conflict: %s", e.orig)
-		raise HTTPException(
+		return JSONResponse(
 			status_code=409,
-			detail="A user with this email or username already exists"
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="A user with this email or username already exists",
+				data=None
+			))
 		)
 
 	try:
@@ -54,19 +59,24 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 		))
 	except Exception as e:
 		logger.exception("Token Generation Failed")
-		
-		raise HTTPException(
-			status_code=500,
-			detail="Account created succesfully, but automatic login failed. Please log in manually"
+		return JSONResponse(
+			status=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Account created succesfully, but automatic login failed. Please log in manually",
+				data=None
+			))
 		)
 
 	response.set_cookie(key='talentforge_refresh_token', value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return APIResponse(
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
 		success=True,
 		message="Account Created Succesfully",
 		data=AuthResponse(user=user, access_token=access_token, token_type="bearer")
-	)
+	)))
 
 
 @router.post("/login", response_model=APIResponse)
@@ -76,15 +86,23 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	ip = request.client.host if request.client else None
 
 	if not db_user:
-		raise HTTPException(
-			status_code=404,
-			detail="Username or email not found"
+		return JSONResponse(
+			status=404,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Username or email not found",
+				data=None
+			))
 		)
 
 	if db_user.provider == 'google':
-		raise HTTPException(
-			status_code=400,
-			detail="This account was created using Google Sign-In. Please continue with Google."
+		return JSONResponse(
+			status=400,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="This account was created using Google Sign-In. Please continue with Google",
+				data=None
+			))
 		)
 
 	password = user.password
@@ -93,9 +111,13 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	try:
 		verify_password(password, hashed_password)
 	except (VerifyMismatchError, InvalidHashError):
-		raise HTTPException(
-			status_code=401,
-			detail="Invalid Credentials"
+		return JSONResponse(
+			status=401,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Invalid Credentials",
+				data=None
+			))
 		)
 
 	data = {
@@ -121,11 +143,13 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return APIResponse(
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
 		success=True,
 		message="Logged In Succesfully",
 		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
-	)
+	)))
 
 
 @router.post("/logout", response_model=APIResponse)
@@ -134,18 +158,22 @@ async def logout(request: Request, response: Response, user: TokenData = Depends
 
 	response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME)
 
-	return APIResponse(
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
 		success=True,
 		message="Logged Out",
 		data=jsonable_encoder(response)
-	)
+	)))
 
 @router.get("/get-all", response_model=APIResponse)
 def fetch_all(response: Response, db: Session=Depends(get_db)):
 	userList = crud.get_all_users(db)
 	users = jsonable_encoder(userList)
-	return APIResponse(
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
 		success= True,
 		message= "All Users",
 		data= users
-	)
+	)))
