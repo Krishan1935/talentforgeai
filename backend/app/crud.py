@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 from . import models, schemas
 from .utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
-from .models import User, Profile, UserSession
+from .models import User, Profile, UserSession, PasswordResetToken
 
 def create_user(db: Session, user: schemas.UserCreate):
 	hashed_password = hash_password(user.password)
@@ -86,7 +86,7 @@ def get_user_by_email(db: Session, email: str):
 	return db.query(User).filter(User.email == email).first()
 
 def get_user_by_username(db: Session, username: str):
-	return db.query(User).filter(User.username == username)
+	return db.query(User).filter(User.username == username).first()
 
 def get_user_by_identifier(db: Session, identifier : str):
 	return db.query(User).filter(
@@ -96,3 +96,16 @@ def get_user_by_identifier(db: Session, identifier : str):
 
 def get_all_users(db: Session):
 	return db.query(User).all()
+
+
+def save_password_reset_token(db: Session, token: str, user_id: int):
+	db_token = PasswordResetToken(
+		user_id= user_id,
+		token_hash= token,
+		expires_at= datetime.now(timezone.utc) + timedelta(minutes=15)
+	)
+
+	db.add(db_token)
+	db.commit()
+	db.refresh(db_token)
+	return db_token

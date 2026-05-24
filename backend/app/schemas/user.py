@@ -29,26 +29,6 @@ class UserResponse(BaseModel):
 
 	model_config = ConfigDict(from_attributes=True)
 
-class OAuthUserCreate(BaseModel):
-	email: str
-	fullname: str
-	provider: str
-	provider_id: str
-
-class AuthBase(BaseModel):
-	identifier : str
-	password : str
-
-class AuthResponse(BaseModel):
-	user: UserResponse
-	access_token: str
-	token_type: str = "bearer"
-
-class UserSession(BaseModel):
-	user_id: int
-	refresh_token_hash: str
-	device_name: Optional[str] = None
-	ip_address: str
 
 class APIResponse(BaseModel):
 	success: bool
@@ -56,8 +36,3 @@ class APIResponse(BaseModel):
 	data: Optional[Any] = None
 
 	model_config = ConfigDict(from_attributes=True)
-
-class TokenData(BaseModel):
-	id: int
-	email: str 
-	username: str 

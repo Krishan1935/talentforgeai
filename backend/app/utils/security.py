@@ -1,5 +1,6 @@
 from argon2 import PasswordHasher
-
+import secrets
+import hashlib
 # hash = ph.hash("my_secret_password")
 # ph.verify(hash, "my_secret_password")  # Returns True or raises error
 import jwt
@@ -23,8 +24,6 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
 	return ph.verify(hashed_password, plain_password)
-
-
 
 def create_access_token(data: dict) -> str:
 	payload = data.copy()
@@ -56,6 +55,13 @@ def create_refresh_token(data: dict) -> str:
 		algorithm=ALGORITHM
 	)
 	return token
+
+def create_password_refresh_token() -> str:
+	token = secrets.token_urlsafe(32)
+
+	token_hash = hashlib.sha256(token.encode()).hexdigest()
+	return token_hash
+
 
 def hash_refresh_token(token: str) -> str:
 	return ph.hash(token)
