@@ -7,6 +7,7 @@ import logging
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
 from sqlalchemy import func
 from datetime import datetime, timezone
+import uuid
 
 from app.config import get_db
 # from app import schemas, models
@@ -41,10 +42,12 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 		)
 
 	try:
+		session_id = str(uuid.uuid4())
 		data = {
 			"id": user.id,
 			"email": user.email,
-			"username": user.username
+			"username": user.username,
+			"session_id":session_id
 		}
 
 		access_token = create_access_token(data)
@@ -52,12 +55,13 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 		refresh_token_hash = hash_refresh_token(refresh_token)
 
 		device_name = request.headers.get("X-Device-Name")
-
+		
 		crud.create_user_session(db, UserSession(
 			user_id=user.id,
 			refresh_token_hash=refresh_token_hash,
 			device_name=device_name,
-			ip_address=ip
+			ip_address=ip,
+			session_id=session_id
 		))
 	except Exception as e:
 		logger.exception("Token Generation Failed")
@@ -122,10 +126,13 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 			))
 		)
 
+	session_id = str(uuid.uuid4())
+	print("\n\n SESSION ID: ", session_id, "\n\n")
 	data = {
 		'id': db_user.id,
 		'email':db_user.email,
-		'username': db_user.username
+		'username': db_user.username,
+		'session_id':session_id
 	}
 	access_token = create_access_token(data)
 	refresh_token = create_refresh_token(data)
@@ -137,7 +144,8 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 		user_id=db_user.id,
 		refresh_token_hash=refresh_token_hash,
 		device_name=device_name,
-		ip_address=ip
+		ip_address=ip,
+		session_id=session_id
 	))
 	db_user.last_login_at = datetime.now(timezone.utc)
 	db.commit()
@@ -156,7 +164,7 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 @router.post("/logout", response_model=APIResponse)
 async def logout(request: Request, response: Response, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
-	crud.delete_user_session(db, user_id=user.id)
+	crud.revoke_session(db, session_id=user.session_id)
 
 	response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME)
 

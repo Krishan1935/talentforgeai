@@ -23,11 +23,13 @@ class UserSession(BaseModel):
 	refresh_token_hash: str
 	device_name: Optional[str] = None
 	ip_address: str
+	session_id: str
 
 class TokenData(BaseModel):
 	id: int
 	email: str 
 	username: str 
+	session_id : str
 
 class ForgotPasswordTokenRequest(BaseModel):
 	email: str

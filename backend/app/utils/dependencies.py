@@ -29,10 +29,23 @@ def get_current_user(request: Request, talentforge_access_token: Optional[str] =
         return TokenData(
             id=payload["id"],
             email=payload["email"],
-            username=payload["username"]
+            username=payload["username"],
+            session_id=payload["session_id"]
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        return JSONResponse(
+            status_code=401, 
+            content=jsonable_encoder(APIResponse(
+            success=True,
+            message="Token Expired",
+            data=None
+	    )))
     except Exception as e:
         print("Exception 1 : \n\n", e)  
-        raise HTTPException(status_code=401, detail="Invalid token")
+        return JSONResponse(
+            status_code=401,
+            content=jsonable_encoder(APIResponse(
+            success=True,
+            message="Invalid token",
+            data=None
+	    )))

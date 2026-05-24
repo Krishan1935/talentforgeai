@@ -42,15 +42,15 @@ def create_user_session(db: Session, user_session: schemas.UserSession):
 		device_name = user_session.device_name,
 		ip_address = user_session.ip_address,
 		is_revoked=False,
-		expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+		expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+		session_id = user_session.session_id
 	)
 	db.add(db_session)
 	db.commit()
 
-def delete_user_session(db: Session, user_id: int):
+def revoke_session(db: Session,  session_id: str):
 	session = db.query(UserSession)\
-		.filter(UserSession.user_id == user_id)\
-		.order_by(UserSession.created_at.desc())\
+		.filter(UserSession.session_id == session_id)\
 		.first()
 
 	session.is_revoked = True

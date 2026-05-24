@@ -56,5 +56,6 @@ class UserSession(Base):
 	created_at=Column(DateTime(timezone=True), server_default=func.now())
 	revoked_at=Column(DateTime(timezone=True), nullable=True)
 	expires_at=Column(DateTime(timezone=True))
+	session_id=Column(String(255), nullable=False)
 
 	user = relationship("User", back_populates="user_sessions")
