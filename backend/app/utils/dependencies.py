@@ -5,13 +5,10 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from typing import Optional
-
+from ..schemas import TokenData
 bearer_scheme = HTTPBearer()
 
-def get_current_user(
-    request: Request,
-    talentforge_access_token: Optional[str] = Cookie(default=None)) -> TokenData:
-    print("COOKIE: ", talentforge_access_token)
+def get_current_user(request: Request, talentforge_access_token: Optional[str] = Cookie(default=None)) -> TokenData:
     token = None
     header = request.headers.get("Authorization")
     if header and header.startswith("Bearer "):
@@ -23,12 +20,13 @@ def get_current_user(
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-
+        print("TOKEN: ", token)
         payload = jwt.decode(
             token,
-            os.getenv("SECRET_KEY"),
+            os.getenv("JWT_SECRET"),
             algorithms=["HS256"]
         )
+
         return TokenData(
             id=payload["id"],
             email=payload["email"],
@@ -36,5 +34,6 @@ def get_current_user(
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
+    except Exception as e:
+        print("Exception 1 : \n\n", e)  
         raise HTTPException(status_code=401, detail="Invalid token")

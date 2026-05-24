@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, delete, select
+from sqlalchemy import or_, delete, select, func
 import uuid
 from datetime import datetime, timezone, timedelta
 
@@ -72,6 +72,10 @@ def delete_user_session(db: Session, user_id: int):
 		.order_by(UserSession.created_at.desc())\
 		.first()
 
+	session.is_revoked = True
+	session.revoked_at = func.now()
+	db.commit()
+	db.refresh(session)
 	print("Sessions: ", session)
 
 
