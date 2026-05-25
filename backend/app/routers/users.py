@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import uuid
 
 from app.config import get_db
+from app.config import redis_client
 # from app import schemas, models
 import app.schemas, app.models
 from app.services import crud
@@ -26,7 +27,19 @@ REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 def register(request: Request, response: Response, user: UserCreate, db: Session=Depends(get_db)):
 	try:
 		ip = request.client.host if request.client else None
+		verified = redis_client.get(f"verified:{user.email}")
+
+		if not verified:
+			return JSONResponse(
+				status_code=403,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="Please verify your email first"
+				))
+			)
 		user = crud.create_user(db, user)
+
+		redis_client.delete(f"verified:{user.email}")
 	
 	except IntegrityError as e:
 		db.rollback()
@@ -66,9 +79,9 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 	except Exception as e:
 		logger.exception("Token Generation Failed")
 		return JSONResponse(
-			status=500,
+			status_code=500,
 			content=jsonable_encoder(APIResponse(
-				success=False,
+				success=True,
 				message="Account created succesfully, but automatic login failed. Please log in manually",
 				data=None
 			))

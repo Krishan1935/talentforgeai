@@ -1,0 +1,49 @@
+from app.config.redis import redis_client
+from redis.exceptions import RedisError
+
+OTP_EXPIRY=300
+
+def save_otp(email: str, otp: str):
+    try:
+        redis_client.setex(
+            f"otp:{email}",
+            OTP_EXPIRY,
+            otp
+        )
+        return True
+    except RedisError as e:
+        return False
+
+def verify_otp(email: str, user_otp: str):
+    try:
+        stored_otp = redis_client.get(f"otp:{email}")
+
+        if not stored_otp:
+            return {
+                "success":False,
+                "message":"OTP Expired or not found"
+            }
+        
+        if stored_otp != user_otp:
+            return {
+                "success":False,
+                "message":"Invalid OTP"
+            }
+        
+        redis_client.delete(f"otp:{email}")
+
+        redis_client.setex(
+            f"verified:{email}",
+            600,
+            1
+        )
+        return {
+            "success":True,
+            "message":"OTP Verified"
+        }
+    except RedisError as e:
+        print(e)
+        return {
+            "success":False,
+            "message":"Redis Server Error"
+        }

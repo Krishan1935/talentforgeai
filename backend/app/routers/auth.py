@@ -8,19 +8,24 @@ import os
 import logging
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timezone
+import pyotp
+import time
 
 from app.config import get_db, oauth, send_mail, EmailSchema
 from app import schemas, models
 from app.services import crud
 from app.utils import (create_password_reset_token, 
-	hash_password_reset_token, hash_password)
+	hash_password_reset_token, hash_password, generate_otp)
 from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
 from app.schemas import (UserResponse, UserCreate, 
 	AuthResponse, AuthBase, 
 	OAuthUserCreate, UserSession, 
 	APIResponse, ForgotPasswordTokenRequest, 
 	ForgotPasswordRequest,
-	ChangePasswordRequest)
+	ChangePasswordRequest,
+	OTPRequest, OTPVerify)
+from app.services import redis
+
 
 router = APIRouter()
 
@@ -331,3 +336,75 @@ async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_
 		message="Password Updated Succesfully",
 		data=None
 	)))
+
+@router.post("/otp/request", response_model=APIResponse)
+async def request_otp(body: OTPRequest):
+	try:
+		otp = generate_otp()
+
+		otp_saved = redis.save_otp(body.email, otp)
+
+		if not otp_saved:
+			return JSONResponse(
+				status_code=500,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="Failed to save OTP"
+				))
+			)
+		# print("OTP: ", otp)
+
+		subject="OTP for Email Verification"
+		message=f"""
+		OTP for verification is: {otp}
+		"""
+		await send_mail(subject, message, EmailSchema(email=[body.email]))
+
+		return JSONResponse(
+			status_code=200,
+			content=jsonable_encoder(APIResponse(
+				success=True,
+				message="OTP Sent Succesfully"
+			))
+		)
+	except Exception as e:
+		return JSONResponse(
+			status_code=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Failed to send OTP"
+			))
+		)
+
+@router.post("/otp/verify", response_model=APIResponse)
+async def verify_otp(body: OTPVerify):
+	try:
+		otp = body.otp
+		email = body.email
+		result = redis.verify_otp(email, otp)
+
+
+		if not result["success"]:
+			return JSONResponse(
+				status_code=400,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message=result["message"]
+				))
+			)
+
+		return JSONResponse(
+			status_code=200,
+			content=jsonable_encoder(APIResponse(
+				success=True,
+				message="OTP Verified"
+			))
+		)
+	except Exception as e:
+		return JSONResponse(
+			status_code=500,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="OTP Verificatin Failed"
+			))
+		)

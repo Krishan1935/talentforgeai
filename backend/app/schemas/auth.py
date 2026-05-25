@@ -44,6 +44,13 @@ class ChangePasswordRequest(BaseModel):
 	new_password: str
 	confirm_password: str
 
+class OTPRequest(BaseModel):
+	email: str
+	username: Optional[str] = None
+
+class OTPVerify(OTPRequest):
+	otp: str
+
 from .user import UserResponse
 
 AuthResponse.model_rebuild()

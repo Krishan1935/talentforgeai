@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from typing import Optional
-from ..schemas import TokenData
+from app.schemas import TokenData
 bearer_scheme = HTTPBearer()
 
 def get_current_user(request: Request, talentforge_access_token: Optional[str] = Cookie(default=None)) -> TokenData:

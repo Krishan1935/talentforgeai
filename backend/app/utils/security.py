@@ -5,6 +5,7 @@ import hashlib
 # ph.verify(hash, "my_secret_password")  # Returns True or raises error
 import jwt
 import os 
+import string
 from dotenv import load_dotenv
 from datetime import datetime,timedelta,timezone
 load_dotenv()
@@ -67,3 +68,10 @@ def hash_password_reset_token(token: str)->str:
 
 def hash_refresh_token(token: str) -> str:
 	return ph.hash(token)
+
+def generate_otp():
+	digits=string.digits
+
+	otp = ''.join(secrets.choice(digits) for _ in range(4))
+
+	return otp
