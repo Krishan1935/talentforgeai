@@ -11,4 +11,3 @@ itsdangerous
 httpx
 pymysql
 fastapi_mail
-pyotp==2.9.0
