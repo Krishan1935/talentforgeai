@@ -5,10 +5,10 @@ OTP_EXPIRY=300
 
 def save_otp(email: str, otp: str):
     try:
-        redis_client.setex(
+        redis_client.set(
             f"otp:{email}",
-            OTP_EXPIRY,
-            otp
+            ex=OTP_EXPIRY,
+            value=otp
         )
         return True
     except RedisError as e:
@@ -32,10 +32,10 @@ def verify_otp(email: str, user_otp: str):
         
         redis_client.delete(f"otp:{email}")
 
-        redis_client.setex(
+        redis_client.set(
             f"verified:{email}",
-            600,
-            1
+            ex=600,
+            value=1
         )
         return {
             "success":True,

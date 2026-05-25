@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import pyotp
 import time
 
-from app.config import get_db, oauth, send_mail, EmailSchema
+from app.config import get_db, oauth, send_mail, EmailSchema, redis_client
 from app import schemas, models
 from app.services import crud
 from app.utils import (create_password_reset_token, 
@@ -340,6 +340,19 @@ async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_
 @router.post("/otp/request", response_model=APIResponse)
 async def request_otp(body: OTPRequest):
 	try:
+		cooldown_key = f"otp_cooldown:{body.email}"
+
+		exists = redis_client.get(cooldown_key)
+
+		if exists:
+			return JSONResponse(
+				status_code=429,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="Please wait before generating another OTP"
+				))
+			)
+
 		otp = generate_otp()
 
 		otp_saved = redis.save_otp(body.email, otp)
@@ -360,6 +373,12 @@ async def request_otp(body: OTPRequest):
 		"""
 		await send_mail(subject, message, EmailSchema(email=[body.email]))
 
+		redis_client.set(
+			name=cooldown_key,
+			ex=60,
+			value="1"
+		)
+
 		return JSONResponse(
 			status_code=200,
 			content=jsonable_encoder(APIResponse(
@@ -368,6 +387,7 @@ async def request_otp(body: OTPRequest):
 			))
 		)
 	except Exception as e:
+		print(e)
 		return JSONResponse(
 			status_code=500,
 			content=jsonable_encoder(APIResponse(
