@@ -21,9 +21,16 @@ def create_user(db: Session, user: schemas.UserCreate):
 		role="user",
 	)
 
-	db_profile = Profile(
-		display_name = db_user.fullname
-	)
+	profile = user.profile
+
+	if profile:
+		db_profile = Profile(
+			display_name = profile.display_name or db_user.fullname,
+			bio = profile.bio,
+			avatar_url = profile.avatar_url,
+			date_of_birth = profile.date_of_birth,
+			gender = profile.gender
+		)
 
 	db_user.profile = db_profile
 

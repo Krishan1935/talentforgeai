@@ -4,11 +4,22 @@ from typing import Optional, Any
 from .profile import ProfileResponse
 # USER SCHEMAS
 
+class ProfileCreate(BaseModel):
+	display_name: Optional[str] = None
+	bio: Optional[str] = None
+	avatar_url: Optional[str] = None
+	date_of_birth: Optional[datetime] = None
+	gender: Optional[str] = None
+
+
 class UserBase(BaseModel):
 	fullname : str
 	username: str
 	email : str 
 	password : str
+	role: Optional[str] = "user"
+	profile: Optional[ProfileCreate] = None
+
 class UserCreate(UserBase):
 	pass 
 class UserResponse(BaseModel):

@@ -7,7 +7,7 @@ class Profile(Base):
 
 	id = Column(Integer, primary_key=True, index=True)
 	user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-	display_name = Column(String(255), nullable=True)
+	display_name = Column(String(255), nullable=False)
 	bio = Column(Text, nullable=True)
 	avatar_url = Column(Text, nullable=True)
 	date_of_birth = Column(DateTime(timezone=True), nullable=True)
