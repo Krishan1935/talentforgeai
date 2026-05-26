@@ -28,7 +28,7 @@ class User(Base):
 	updated_at=Column(DateTime(timezone=True), server_default=func.now())
 	deleted_at=Column(DateTime(timezone=True))
 
-	provider=Column(String(255), nullable=True)
+	provider=Column(String(100), nullable=True)
 	provider_id=Column(String(255), nullable=True)
 
 	profile = relationship(

@@ -16,7 +16,9 @@ def create_user(db: Session, user: schemas.UserCreate):
 		username=user.username,
 		password_hash=hashed_password,
 		last_login_at=datetime.utcnow(),
-		provider="local"
+		provider="local",
+		status="active",
+		role="user",
 	)
 
 	db_profile = Profile(

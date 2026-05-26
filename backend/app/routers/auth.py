@@ -105,9 +105,9 @@ async def google_callback(request: Request, response: Response, db: Session = De
 async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = Depends(get_db)):
 	try:
 		email = body.email
-		print("email: ", email)
+		# print("email: ", email)
 		user = crud.get_user_by_email(db, email)
-		print(user)
+		# print(user)
 
 		if not user:
 			return JSONResponse(
@@ -129,12 +129,32 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			)))
 
 		try:
+			forgot_password_cooldown = f"fp_cooldown:{user.email}"
+
+			exists = redis_client.get(forgot_password_cooldown)
+			if exists and int(exists) >= 3:
+				return JSONResponse(
+					status_code=429,
+					content=jsonable_encoder(APIResponse(
+						success=False,
+						message="You changed your password recently, try again later."
+					))
+				)
+
 			token, token_hash = create_password_reset_token()
 
 			saved = crud.save_password_reset_token(db, user.id, token_hash)
+
+			pipe = redis_client.pipeline()
+
+			pipe.incr(forgot_password_cooldown)
+
+			pipe.expire(forgot_password_cooldown, 900, nx=True)
+
+			pipe.execute()
 		except Exception as e:
 			db.rollback()
-			# print(e)
+			print(e)
 			return JSONResponse(
 				status_code=500,
 				content=jsonable_encoder(APIResponse(
