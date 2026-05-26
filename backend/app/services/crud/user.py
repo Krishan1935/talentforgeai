@@ -24,12 +24,16 @@ def create_user(db: Session, user: schemas.UserCreate):
 	profile = user.profile
 
 	if profile:
+		profile_data = profile.model_dump()
+		filled = sum(1 for value in profile_data.values() if value)
+		total = len(profile_data)
 		db_profile = Profile(
 			display_name = profile.display_name or db_user.fullname,
 			bio = profile.bio,
 			avatar_url = profile.avatar_url,
 			date_of_birth = profile.date_of_birth,
-			gender = profile.gender
+			gender = profile.gender,
+			profile_progress = int((filled/total)*100)
 		)
 
 	db_user.profile = db_profile

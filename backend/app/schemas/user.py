@@ -1,15 +1,8 @@
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Any
-from .profile import ProfileResponse
+from .profile import ProfileResponse, ProfileBase
 # USER SCHEMAS
-
-class ProfileCreate(BaseModel):
-	display_name: Optional[str] = None
-	bio: Optional[str] = None
-	avatar_url: Optional[str] = None
-	date_of_birth: Optional[datetime] = None
-	gender: Optional[str] = None
 
 
 class UserBase(BaseModel):
@@ -18,7 +11,7 @@ class UserBase(BaseModel):
 	email : str 
 	password : str
 	role: Optional[str] = "user"
-	profile: Optional[ProfileCreate] = None
+	profile: Optional[ProfileBase] = None
 
 class UserCreate(UserBase):
 	pass 

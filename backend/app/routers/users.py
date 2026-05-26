@@ -28,6 +28,17 @@ REFRESH_TOKEN_COOKIE_NAME = 'talentforge_refresh_token'
 def register(request: Request, response: Response, user: UserCreate, db: Session=Depends(get_db)):
 	try:
 		ip = request.client.host if request.client else None
+		existing_user = crud.get_user_by_email(db, user.email)
+
+		if existing_user:
+			return JSONResponse(
+				status_code=409,
+				content=jsonable_encoder(APIResponse(
+					success=False,
+					message="A user with this email or username already exists",
+					data=None
+				))
+			)
 		verified = redis_client.get(f"verified:{user.email}")
 
 		if not verified:
