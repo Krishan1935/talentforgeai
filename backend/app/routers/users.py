@@ -11,6 +11,7 @@ import uuid
 
 from app.config import get_db
 from app.config import redis_client
+from app.services import redis
 # from app import schemas, models
 import app.schemas, app.models
 from app.services import crud
@@ -106,9 +107,9 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 	key = f"login_cooldown:{db_user.email}"
 
-	attempts = redis_client.get(key)
+	attempts = redis.track_rate_limit(key, 300)
 
-	if attempts and int(attempts) >= 3:
+	if attempts and int(attempts) > 3:
 		return JSONResponse(
 			status_code=429,
 			content=jsonable_encoder(APIResponse(
@@ -143,14 +144,6 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	try:
 		verify_password(password, hashed_password)
 	except (VerifyMismatchError, InvalidHashError):
-		pipe = redis_client.pipeline()
-
-		pipe.incr(key)
-
-		pipe.expire(key, 300, nx=True)
-
-		pipe.execute()
-
 		return JSONResponse(
 			status_code=401,
 			content=jsonable_encoder(APIResponse(

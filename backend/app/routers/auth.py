@@ -13,7 +13,7 @@ import time
 
 from app.config import get_db, oauth, send_mail, EmailSchema, redis_client
 from app import schemas, models
-from app.services import crud
+from app.services import crud, redis
 from app.utils import (create_password_reset_token, 
 	hash_password_reset_token, hash_password, generate_otp)
 from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token
@@ -131,8 +131,8 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 		try:
 			forgot_password_cooldown = f"fp_cooldown:{user.email}"
 
-			exists = redis_client.get(forgot_password_cooldown)
-			if exists and int(exists) >= 3:
+			exists = redis.track_rate_limit(forgot_password_cooldown, 900)
+			if exists and int(exists) > 3:
 				return JSONResponse(
 					status_code=429,
 					content=jsonable_encoder(APIResponse(
@@ -144,14 +144,6 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			token, token_hash = create_password_reset_token()
 
 			saved = crud.save_password_reset_token(db, user.id, token_hash)
-
-			pipe = redis_client.pipeline()
-
-			pipe.incr(forgot_password_cooldown)
-
-			pipe.expire(forgot_password_cooldown, 900, nx=True)
-
-			pipe.execute()
 		except Exception as e:
 			db.rollback()
 			# print(e)
@@ -276,9 +268,9 @@ async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_
 	# print("\n\n body: ", body)
 	key = f"fp_cooldown:{body.email}"
 
-	attempts = redis_client.get(key)
+	attempts = redis.track_rate_limit(key, 900)
 
-	if attempts and int(attempts) >=3:
+	if attempts and int(attempts) >3:
 		return JSONResponse(
 			status_code=429,
 			content=jsonable_encoder(APIResponse(
@@ -334,14 +326,6 @@ async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_
 
 	try: 
 		crud.update_password(db, body.new_password, user)
-			
-		pipe = redis_client.pipeline()
-
-		pipe.incr(key)
-
-		pipe.expire(key, 900, nx=True)
-
-		pipe.execute()
 	except IntegrityError as e:
 		db.rollback()
 		return JSONResponse(
@@ -383,9 +367,9 @@ async def request_otp(body: OTPRequest):
 	try:
 		cooldown_key = f"otp_cooldown:{body.email}"
 
-		exists = redis_client.get(cooldown_key)
+		exists = redis.track_rate_limit(cooldown_key, 300)
 
-		if exists:
+		if exists and int(exists) > 3:
 			return JSONResponse(
 				status_code=429,
 				content=jsonable_encoder(APIResponse(
@@ -413,12 +397,6 @@ async def request_otp(body: OTPRequest):
 		OTP for verification is: {otp}
 		"""
 		await send_mail(subject, message, EmailSchema(email=[body.email]))
-
-		redis_client.set(
-			name=cooldown_key,
-			ex=60,
-			value="1"
-		)
 
 		return JSONResponse(
 			status_code=200,
