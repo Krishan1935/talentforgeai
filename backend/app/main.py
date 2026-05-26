@@ -7,9 +7,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
 
 
-from . import models
-from .config import engine, Base
-from .routers import users, auth
+from app import models
+from app.config import engine, Base
+from app.routers import users, auth, profile
 
 Base.metadata.create_all(bind=engine)
 
@@ -28,3 +28,4 @@ async def startup():
 
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(profile.router, prefix="/profile", tags=["profile"])
