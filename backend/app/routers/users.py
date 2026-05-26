@@ -104,6 +104,19 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	db_user = crud.get_user_by_identifier(db, user.identifier)
 	ip = request.client.host if request.client else None
 
+	key = f"login_cooldown:{db_user.email}"
+
+	attempts = redis_client.get(key)
+
+	if attempts and int(attempts) >= 3:
+		return JSONResponse(
+			status_code=429,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Try again later!"
+			))
+		)
+
 	if not db_user:
 		return JSONResponse(
 			status=404,
@@ -130,8 +143,16 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	try:
 		verify_password(password, hashed_password)
 	except (VerifyMismatchError, InvalidHashError):
+		pipe = redis_client.pipeline()
+
+		pipe.incr(key)
+
+		pipe.expire(key, 300, nx=True)
+
+		pipe.execute()
+
 		return JSONResponse(
-			status=401,
+			status_code=401,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Invalid Credentials",
