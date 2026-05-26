@@ -154,7 +154,7 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			pipe.execute()
 		except Exception as e:
 			db.rollback()
-			print(e)
+			# print(e)
 			return JSONResponse(
 				status_code=500,
 				content=jsonable_encoder(APIResponse(
@@ -273,7 +273,20 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 
 @router.post("/password/change-password", response_model=APIResponse)
 async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_db)):
-	print("\n\n body: ", body)
+	# print("\n\n body: ", body)
+	key = f"fp_cooldown:{body.email}"
+
+	attempts = redis_client.get(key)
+
+	if attempts and int(attempts) >=3:
+		return JSONResponse(
+			status_code=429,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="You changed your password recently, try again later."
+			))
+		)
+
 	user = crud.get_user_by_email(db, body.email)
 
 	if not user:
@@ -321,6 +334,14 @@ async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_
 
 	try: 
 		crud.update_password(db, body.new_password, user)
+			
+		pipe = redis_client.pipeline()
+
+		pipe.incr(key)
+
+		pipe.expire(key, 900, nx=True)
+
+		pipe.execute()
 	except IntegrityError as e:
 		db.rollback()
 		return JSONResponse(
