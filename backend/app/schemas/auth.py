@@ -32,6 +32,8 @@ class TokenData(BaseModel):
 	email: str 
 	username: str 
 	session_id : str
+	exp: datetime
+	type: str
 
 class ForgotPasswordTokenRequest(BaseModel):
 	email: str

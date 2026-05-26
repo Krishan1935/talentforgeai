@@ -16,6 +16,7 @@ class ProfileCreate(ProfileBase):
 class ProfileResponse(ProfileBase):
 	id: int
 	user_id: int
+	profile_progress: int
 
 	class Config: 
 		from_attributes=True

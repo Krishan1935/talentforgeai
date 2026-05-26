@@ -116,10 +116,6 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	db_user = crud.get_user_by_identifier(db, user.identifier)
 	ip = request.client.host if request.client else None
 
-	key = f"login_cooldown:{db_user.email}"
-
-	attempts = redis.track_rate_limit(key, 300)
-
 	if attempts and int(attempts) > 3:
 		return JSONResponse(
 			status_code=429,
@@ -131,7 +127,7 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 	if not db_user:
 		return JSONResponse(
-			status=404,
+			status_code=404,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Username or email not found",
@@ -139,9 +135,15 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 			))
 		)
 
+	
+	key = f"login_cooldown:{db_user.email}"
+
+	attempts = redis.track_rate_limit(key, 300)
+
+
 	if db_user.provider == 'google':
 		return JSONResponse(
-			status=400,
+			status_code=400,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="This account was created using Google Sign-In. Please continue with Google",
@@ -189,15 +191,21 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	db.commit()
 	db.refresh(db_user)
 
-	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
+	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, 
+	value=refresh_token, 
+	httponly=True, 
+	secure=False, 
+	max_age=30*24*60*60)
 
-	return JSONResponse(
-		status_code=200,
-		content=jsonable_encoder(APIResponse(
+	return APIResponse(
 		success=True,
 		message="Logged In Succesfully",
-		data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
-	)))
+		data=AuthResponse(
+			user=db_user,
+			access_token=access_token,
+			token_type="bearer"
+		)
+	)
 
 
 @router.post("/logout", response_model=APIResponse)
@@ -223,5 +231,5 @@ def fetch_all(response: Response, db: Session=Depends(get_db)):
 		content=jsonable_encoder(APIResponse(
 		success= True,
 		message= "All Users",
-		data= users
+		data= user
 	)))

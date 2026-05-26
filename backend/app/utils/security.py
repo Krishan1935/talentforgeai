@@ -69,7 +69,7 @@ def hash_password_reset_token(token: str)->str:
 def hash_refresh_token(token: str) -> str:
 	return ph.hash(token)
 
-def generate_otp():
+def generate_otp() -> str:
 	digits=string.digits
 
 	otp = ''.join(secrets.choice(digits) for _ in range(4))

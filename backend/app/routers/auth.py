@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Response
+from fastapi import APIRouter, Request, Depends, HTTPException, Response, Cookie
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -447,3 +447,61 @@ async def verify_otp(body: OTPVerify):
 				message="OTP Verificatin Failed"
 			))
 		)
+
+@router.post("/refresh", response_model=APIResponse)
+def refresh(talentforge_refresh_token: str = Cookie(default=None), db: Session = Depends(get_db)):
+	try:
+		payload = jwt.decode(
+			talentforge_refresh_token,
+			os.getenv("JWT_SECRET"),
+			algorithms=["HS256"]
+		)
+
+		if payload["type"] != "refresh":
+			return JSONResponse(
+			status_code=401,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Invalid Token Type"
+			)))
+		print("PAYLOAD: ", payload)
+		user_id = payload["id"]
+		session_id = payload["session_id"]
+	except jwt.ExpiredSignatureError:
+		return JSONResponse(
+			status_code=401,
+			content=jsonable_encoder(APIResponse(
+			success=False,
+			message="Token Expired"
+		)))
+	except Exception as e:
+		print("Exception 1 : \n\n", e)  
+		raise HTTPException(
+			status_code=401,
+			detail="Invalid Token"
+		)
+    
+	session = crud.get_session(db, session_id)
+
+	if not session:
+		raise HTTPException(
+		status=401,
+		detail="Session not found"
+		)
+
+	data = {
+		"id": user_id,
+		"email":payload["email"],
+		"username":payload["username"],
+		"session_id":session.session_id
+	}
+
+	new_access_token = create_access_token(data)
+
+	return JSONResponse(
+		status_code=200,
+		content=jsonable_encoder(APIResponse(
+		success=True,
+		message="New Access Token",
+		data=new_access_token
+		)))

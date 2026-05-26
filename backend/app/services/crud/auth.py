@@ -58,8 +58,10 @@ def revoke_session(db: Session,  session_id: str):
 	db.commit()
 	db.refresh(session)
 
-
-
+def get_session(db: Session, session_id: str):
+	return db.query(UserSession)\
+	.filter(UserSession.session_id == session_id,
+	UserSession.is_revoked == False).first()
 
 def save_password_reset_token(db: Session, user_id: int, token: Optional[str] = ""):
 	db_token = PasswordResetToken(

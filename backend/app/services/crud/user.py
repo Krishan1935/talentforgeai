@@ -28,7 +28,7 @@ def create_user(db: Session, user: schemas.UserCreate):
 		filled = sum(1 for value in profile_data.values() if value)
 		total = len(profile_data)
 		db_profile = Profile(
-			display_name = profile.display_name or db_user.fullname,
+			display_name = profile.display_name,
 			bio = profile.bio,
 			avatar_url = profile.avatar_url,
 			date_of_birth = profile.date_of_birth,
