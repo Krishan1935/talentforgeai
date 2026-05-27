@@ -485,7 +485,7 @@ def refresh(talentforge_refresh_token: str = Cookie(default=None), db: Session =
 
 	if not session:
 		raise HTTPException(
-		status=401,
+		status_code=401,
 		detail="Session not found"
 		)
 

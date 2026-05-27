@@ -19,13 +19,16 @@ def create_user(db: Session, user: schemas.UserCreate):
 		provider="local",
 		status="active",
 		role="user",
+		is_email_verified=True
 	)
 
 	profile = user.profile
-
+	db_profile = Profile(
+		display_name=db_user.fullname
+	)
 	if profile:
 		profile_data = profile.model_dump()
-		filled = sum(1 for value in profile_data.values() if value)
+		filled = sum(1 for value in profile_data.values() if value is not None and value != "")
 		total = len(profile_data)
 		db_profile = Profile(
 			display_name = profile.display_name,
@@ -33,7 +36,9 @@ def create_user(db: Session, user: schemas.UserCreate):
 			avatar_url = profile.avatar_url,
 			date_of_birth = profile.date_of_birth,
 			gender = profile.gender,
-			profile_progress = int((filled/total)*100)
+			github_link = profile.github_link,
+			linkedin_link = profile.linkedin_link,
+			profile_progress = int((filled/total)*100) if total > 0 else 0
 		)
 
 	db_user.profile = db_profile

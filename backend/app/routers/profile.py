@@ -3,7 +3,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-import logging
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
 from sqlalchemy import func
 from datetime import datetime, timezone
@@ -18,13 +17,33 @@ router = APIRouter()
 
 @router.post("/update", response_model=APIResponse)
 def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
-    email = user.email
-
-    return JSONResponse(
-        status_code=200,
-        content=jsonable_encoder(APIResponse(
-            success=True,
-            message="update profile",
-            data=user
-        ))
-    )
+    try:
+        crud.update_profile(db, body, user.id)
+        
+        updated_user = crud.get_user_by_email(db, user.email)
+        return JSONResponse(
+            status_code=200,
+            content=jsonable_encoder(APIResponse(
+                success=True,
+                message="update profile",
+                data=UserResponse.model_validate(updated_user)
+            ))
+        )
+    except IntegrityError:
+        db.rollback()
+        return JSONResponse(
+            status_code=500,
+            content=jsonable_encoder(APIResponse(
+                success=True,
+                message="Can not update profile"
+            ))
+        )
+    except Exception as e:
+        print(e)
+        return JSONResponse(
+            status_code=500,
+            content=jsonable_encoder(APIResponse(
+                success=False,
+                message="Internal Server Error"
+            ))
+        )

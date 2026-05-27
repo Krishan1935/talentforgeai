@@ -9,6 +9,8 @@ class ProfileBase(BaseModel):
 	avatar_url: Optional[str] = None
 	date_of_birth: Optional[date] = None
 	gender: Optional[str] = None
+	github_link: Optional[str] = None
+	linkedin_link: Optional[str] = None
 
 class ProfileCreate(ProfileBase):
 	pass 

@@ -13,5 +13,6 @@ class Profile(Base):
 	date_of_birth = Column(DateTime(timezone=True), nullable=True)
 	gender = Column(String(20), nullable=True)
 	profile_progress = Column(Integer, default=0)
-
+	github_link = Column(String(255), nullable=True)
+	linkedin_link = Column(String(255), nullable=True)
 	user = relationship("User", back_populates="profile")
