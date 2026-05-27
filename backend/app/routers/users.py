@@ -116,15 +116,6 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	db_user = crud.get_user_by_identifier(db, user.identifier)
 	ip = request.client.host if request.client else None
 
-	if attempts and int(attempts) > 3:
-		return JSONResponse(
-			status_code=429,
-			content=jsonable_encoder(APIResponse(
-				success=False,
-				message="Try again later!"
-			))
-		)
-
 	if not db_user:
 		return JSONResponse(
 			status_code=404,
@@ -139,7 +130,14 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 	key = f"login_cooldown:{db_user.email}"
 
 	attempts = redis.track_rate_limit(key, 300)
-
+	if attempts and int(attempts) > 3:
+		return JSONResponse(
+			status_code=429,
+			content=jsonable_encoder(APIResponse(
+				success=False,
+				message="Try again later!"
+			))
+		)
 
 	if db_user.provider == 'google':
 		return JSONResponse(
