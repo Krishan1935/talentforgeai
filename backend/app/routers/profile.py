@@ -25,7 +25,7 @@ def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: UserR
             status_code=200,
             content=jsonable_encoder(APIResponse(
                 success=True,
-                message="update profile",
+                message="Profile Updated",
                 data=UserResponse.model_validate(updated_user)
             ))
         )
