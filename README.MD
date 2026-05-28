@@ -7,7 +7,7 @@
 - Profile
     - ~~update profile~~
     - ~~upload avatar~~
-    - education
+    - ~~education~~
     - experience
     - skills
     - projects
