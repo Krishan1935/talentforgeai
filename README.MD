@@ -5,8 +5,8 @@
 - ~~add email verification (OTP)~~
 
 - Profile
-    - update profile
-    - upload avatar
+    - ~~update profile~~
+    - ~~upload avatar~~
     - education
     - experience
     - skills
