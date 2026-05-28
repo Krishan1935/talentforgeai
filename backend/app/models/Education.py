@@ -1,0 +1,22 @@
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, func, Date
+from sqlalchemy.orm import relationship
+from ..config import Base 
+
+
+class Education(Base):
+    __tablename__ = "educations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    intitution = Column(String(255), nullable=False)
+    degree = Column(String(255), nullable=True)
+    field_of_study = Column(String(255), nullable=True)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    grade = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    is_current = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    user = relationship("User", back_populates="educations")
