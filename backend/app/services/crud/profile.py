@@ -8,7 +8,7 @@ from app.models import User, Profile
 from app.schemas import ProfileBase
 
 
-def update_profile(db: Session, profile: ProfileBase, user_id: int):
+def upload_profile(db: Session, profile: ProfileBase, user_id: int):
     profile_data = profile.model_dump(exclude_unset=True)
 
     existing = db.query(Profile).filter(

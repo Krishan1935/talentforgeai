@@ -20,7 +20,7 @@ router = APIRouter()
 @router.post("/update", response_model=APIResponse)
 def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: TokenData = Depends(get_current_user)):
     try:
-        crud.update_profile(db, body, user.id)
+        crud.upload_profile(db, body, user.id)
         
         updated_user = crud.get_user_by_email(db, user.email)
         return JSONResponse(
@@ -118,7 +118,7 @@ async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(
             avatar_url = url
         )
 
-        crud.update_profile(db, updated_profile, user.id)
+        crud.upload_profile(db, updated_profile, user.id)
         updated_user = crud.get_user_by_email(db, user.email)
     except Exception:
         delete_avatar(user.id)
