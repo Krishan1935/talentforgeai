@@ -42,7 +42,6 @@ def verify_otp(email: str, user_otp: str):
             "message":"OTP Verified"
         }
     except RedisError as e:
-        print(e)
         return {
             "success":False,
             "message":"Redis Server Error"

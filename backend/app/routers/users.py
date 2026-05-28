@@ -88,9 +88,14 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 			ip_address=ip,
 			session_id=session_id
 		))
+
+		user.last_login_at = datetime.now(timezone.utc)
+		db.commit()
+		db.refresh(user)
 	except Exception as e:
 		logger.exception("Token Generation Failed")
 		return JSONResponse(
+
 			status_code=500,
 			content=jsonable_encoder(APIResponse(
 				success=True,
@@ -99,15 +104,16 @@ def register(request: Request, response: Response, user: UserCreate, db: Session
 			))
 		)
 
-	response.set_cookie(key='talentforge_refresh_token', value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
+	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, 
+		value=refresh_token, 
+		httponly=True, secure=False, 
+		max_age=30*24*60*60)
 
-	return JSONResponse(
-		status_code=200,
-		content=jsonable_encoder(APIResponse(
+	return APIResponse(
 		success=True,
 		message="Account Created Succesfully",
 		data=AuthResponse(user=user, access_token=access_token, token_type="bearer")
-	)))
+	)
 
 
 @router.post("/login", response_model=APIResponse)
@@ -165,7 +171,6 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 		)
 
 	session_id = str(uuid.uuid4())
-	print("\n\n SESSION ID: ", session_id, "\n\n")
 	data = {
 		'id': db_user.id,
 		'email':db_user.email,
@@ -208,8 +213,9 @@ def login(request: Request, response: Response, user: AuthBase, db: Session=Depe
 
 @router.post("/logout", response_model=APIResponse)
 async def logout(request: Request, response: Response, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
-	crud.revoke_session(db, session_id=user.session_id)
-
+	# crud.revoke_session(db, session_id=user.session_id)
+	ip = request.client.host
+	crud.revoke_ip_sessions(db, ip, user.id)
 	response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME)
 
 	return JSONResponse(

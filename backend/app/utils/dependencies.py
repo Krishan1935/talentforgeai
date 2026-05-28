@@ -32,12 +32,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> TokenDa
                 status_code=401,
                 detail="Invalid Token Type"
             )
-        print("SESSION ID : ", payload)
-        session = crud.get_session(db, payload["session_id"])
-        print('SESSION: ', session)
-        if not session:
+        session = crud.get_session_by_id(db, payload["session_id"])
+        if not session or session.is_revoked:
             raise HTTPException(
-                status=401,
+                status_code=401,
                 detail="Session not found"
             )
 

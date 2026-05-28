@@ -105,9 +105,9 @@ async def google_callback(request: Request, response: Response, db: Session = De
 async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = Depends(get_db)):
 	try:
 		email = body.email
-		# print("email: ", email)
+		#  ("email: ", email)
 		user = crud.get_user_by_email(db, email)
-		# print(user)
+		#  (user)
 
 		if not user:
 			return JSONResponse(
@@ -146,7 +146,7 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			saved = crud.save_password_reset_token(db, user.id, token_hash)
 		except Exception as e:
 			db.rollback()
-			# print(e)
+			#  (e)
 			return JSONResponse(
 				status_code=500,
 				content=jsonable_encoder(APIResponse(
@@ -167,7 +167,6 @@ async def reset_password_token(body: ForgotPasswordTokenRequest, db:Session = De
 			data=None
 		)))
 	except Exception as e:
-		print(e)
 		return JSONResponse(
 			status_code=500,
 			content=jsonable_encoder(APIResponse(
@@ -227,7 +226,6 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 			))
 		)
 	except Exception as e:
-		print(e)
 		return JSONResponse(
 			status=500,
 			content=jsonable_encoder(APIResponse(
@@ -265,7 +263,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 
 @router.post("/password/change-password", response_model=APIResponse)
 async def change_password(body: ChangePasswordRequest, db:Session = Depends(get_db)):
-	# print("\n\n body: ", body)
+	#  ("\n\n body: ", body)
 	key = f"fp_cooldown:{body.email}"
 
 	attempts = redis.track_rate_limit(key, 900)
@@ -390,7 +388,7 @@ async def request_otp(body: OTPRequest):
 					message="Failed to save OTP"
 				))
 			)
-		# print("OTP: ", otp)
+		#  ("OTP: ", otp)
 
 		subject="OTP for Email Verification"
 		message=f"""
@@ -406,7 +404,6 @@ async def request_otp(body: OTPRequest):
 			))
 		)
 	except Exception as e:
-		print(e)
 		return JSONResponse(
 			status_code=500,
 			content=jsonable_encoder(APIResponse(
@@ -464,7 +461,7 @@ def refresh(talentforge_refresh_token: str = Cookie(default=None), db: Session =
 				success=False,
 				message="Invalid Token Type"
 			)))
-		print("PAYLOAD: ", payload)
+
 		user_id = payload["id"]
 		session_id = payload["session_id"]
 	except jwt.ExpiredSignatureError:
@@ -475,15 +472,15 @@ def refresh(talentforge_refresh_token: str = Cookie(default=None), db: Session =
 			message="Token Expired"
 		)))
 	except Exception as e:
-		print("Exception 1 : \n\n", e)  
 		raise HTTPException(
 			status_code=401,
 			detail="Invalid Token"
 		)
     
-	session = crud.get_session(db, session_id)
+	# token_hash = hash_refresh_token(talentforge_refresh_token)
+	session = crud.get_session_by_id(db, payload["session_id"])
 
-	if not session:
+	if not session or session.is_revoked:
 		raise HTTPException(
 		status_code=401,
 		detail="Session not found"

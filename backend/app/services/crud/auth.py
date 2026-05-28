@@ -52,16 +52,32 @@ def revoke_session(db: Session,  session_id: str):
 	session = db.query(UserSession)\
 		.filter(UserSession.session_id == session_id)\
 		.first()
+	
+	if not session:
+		print("\n\nNOT FOUND SESSION \n\n")
+		return
 
 	session.is_revoked = True
 	session.revoked_at = func.now()
 	db.commit()
 	db.refresh(session)
 
-def get_session(db: Session, session_id: str):
+
+def revoke_ip_sessions(db: Session, ip: str, user_id: int):
+	sessions = db.query(UserSession)\
+		.filter(UserSession.ip_address == ip,
+		UserSession.user_id == user_id)\
+			.update({
+				"is_revoked":True,
+				"revoked_at":func.now()
+			})
+	
+	db.commit()
+
+
+def get_session_by_id(db: Session, session_id: str):
 	return db.query(UserSession)\
-	.filter(UserSession.session_id == session_id,
-	UserSession.is_revoked == False).first()
+	.filter(UserSession.session_id == session_id).first()
 
 def save_password_reset_token(db: Session, user_id: int, token: Optional[str] = ""):
 	db_token = PasswordResetToken(

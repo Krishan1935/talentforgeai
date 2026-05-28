@@ -15,7 +15,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# print("\n\n\n SECRET KEY: ",os.getenv("SECRET_KEY"), "\n\n\n")
+#  ("\n\n\n SECRET KEY: ",os.getenv("SECRET_KEY"), "\n\n\n")
 
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"), 
 	same_site="lax", https_only=False, max_age=1800)

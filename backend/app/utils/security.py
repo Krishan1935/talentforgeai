@@ -44,7 +44,6 @@ def create_access_token(data: dict) -> str:
 
 def create_refresh_token(data: dict) -> str:
 	payload = data.copy()
-
 	expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
 	payload['exp'] = expire

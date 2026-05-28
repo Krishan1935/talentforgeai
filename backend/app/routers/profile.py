@@ -41,7 +41,6 @@ def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: Token
             ))
         )
     except Exception as e:
-        print(e)
         return JSONResponse(
             status_code=500,
             content=jsonable_encoder(APIResponse(
@@ -54,8 +53,8 @@ ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 MAX_SIZE = 5 * 1024 * 1024
 @router.post("/avatar")
 async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
-    # print("FILE: ",file)
-    # print("USER: ", user)
+    #  ("FILE: ",file)
+    #  ("USER: ", user)
 
     if file.content_type not in ALLOWED_TYPES:
         return JSONResponse(
@@ -75,7 +74,7 @@ async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(
                 message="Failed to read file"
             ))
         )
-    # print("CONTENT: ", content)
+    #  ("CONTENT: ", content)
     if len(content) > MAX_SIZE:
             return JSONResponse(
                 status_code=400,

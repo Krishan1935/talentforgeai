@@ -21,7 +21,6 @@ router = APIRouter()
 @router.post("/add", response_model=APIResponse)
 def add_education(data: EducationBase, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        print("Data: ", data)
         education = upload_education(db, data, user.id)
 
         return JSONResponse(
@@ -81,7 +80,6 @@ user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
         
     except Exception as e:
         db.rollback()
-        print(e)
         return JSONResponse(
             status_code=500,
             content=jsonable_encoder(APIResponse(
