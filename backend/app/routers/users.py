@@ -217,7 +217,6 @@ async def logout(request: Request, response: Response, user: TokenData = Depends
 		content=jsonable_encoder(APIResponse(
 		success=True,
 		message="Logged Out",
-		data=jsonable_encoder(response)
 	)))
 
 @router.get("/get-all", response_model=APIResponse)

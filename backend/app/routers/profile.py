@@ -20,15 +20,15 @@ router = APIRouter()
 @router.post("/update", response_model=APIResponse)
 def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: TokenData = Depends(get_current_user)):
     try:
-        crud.upload_profile(db, body, user.id)
+        updated_profile = crud.upload_profile(db, body, user.id)
         
-        updated_user = crud.get_user_by_email(db, user.email)
+        # updated_user = crud.get_user_by_email(db, user.email)
         return JSONResponse(
             status_code=200,
             content=jsonable_encoder(APIResponse(
                 success=True,
                 message="Profile Updated",
-                data=UserResponse.model_validate(updated_user)
+                data=ProfileResponse.model_validate(updated_profile)
             ))
         )
     except IntegrityError:
@@ -119,7 +119,7 @@ async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(
         )
 
         crud.upload_profile(db, updated_profile, user.id)
-        updated_user = crud.get_user_by_email(db, user.email)
+        # updated_user = crud.get_user_by_email(db, user.email)
     except Exception:
         delete_avatar(user.id)
         db.rollback()
@@ -135,7 +135,7 @@ async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(
         status_code=200,
         content=jsonable_encoder(APIResponse(
             success=True,
-            message="Profile Updated",
-            data=UserResponse.model_validate(updated_user)
+            message="Avatar Updated",
+            data=url
         ))
     )
