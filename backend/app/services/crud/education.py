@@ -34,7 +34,7 @@ def update_education( db: Session, data: EducationBase, education_id: int, user_
         setattr(existing, key, value)
 
     db.commit()
-    db.refresh(exising)
+    db.refresh(existing)
     return existing
 
 def delete_education(db: Session, education_id: int, user_id: int) -> bool:
