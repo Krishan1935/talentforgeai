@@ -8,7 +8,7 @@ class Education(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    intitution = Column(String(255), nullable=False)
+    institution = Column(String(255), nullable=False)
     degree = Column(String(255), nullable=True)
     field_of_study = Column(String(255), nullable=True)
     start_date = Column(Date, nullable=True)
