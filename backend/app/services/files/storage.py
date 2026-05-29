@@ -20,3 +20,13 @@ def confirm_upload_url(bucket: str, file: str):
 
     return False
 
+def get_signed_view_url(bucket: str, file: str, expires_in: int):
+    try:
+        file_name = file.split("/",1)[1].rsplit("/", 0)[0]
+        print(f"\n\n file name in get urL: {file_name}")
+        response = supabase.storage\
+            .from_(bucket).create_signed_url(file_name, expires_in)
+
+        return response["signedUrl"]
+    except:
+        return None

@@ -12,7 +12,7 @@ load_dotenv()
 
 from app.config import get_db
 from app.services import crud
-from app.services.files.storage import get_signed_upload_url, confirm_upload_url
+from app.services.files.storage import get_signed_upload_url, confirm_upload_url, get_signed_view_url
 from app.schemas.user import APIResponse
 from app.schemas.auth import TokenData
 from app.schemas.resume import UploadURLRequest, ConfirmUploadRequest, SaveResumeRequest, SaveResumeResponse
@@ -93,12 +93,15 @@ user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
 
         resume = crud.save_resume(db, body, user.id)
 
+        view_url = get_signed_view_url(os.getenv("SUPABASE_CV_BUCKET"), file.file_key, 60*3)
+
         return JSONResponse(
             status_code=200,
             content=jsonable_encoder(APIResponse(
                 success=True,
                 message="Resume Saved Succesfully",
-                data=SaveResumeResponse.model_validate(resume)
+                data={**SaveResumeResponse.model_validate(resume).model_dump(), 
+                    "view_url":view_url}
             ))
         )
     except HTTPException as e:
