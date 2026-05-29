@@ -12,7 +12,10 @@ load_dotenv()
 
 from app.config import get_db
 from app.services import crud
-from app.services.files.storage import get_signed_upload_url, confirm_upload_url, get_signed_view_url
+from app.services.files.storage import (get_signed_upload_url, 
+    confirm_upload_url, 
+    get_signed_view_url,
+    remove_file)
 from app.schemas.user import APIResponse
 from app.schemas.auth import TokenData
 from app.schemas.resume import UploadURLRequest, ConfirmUploadRequest, SaveResumeRequest, SaveResumeResponse
@@ -77,8 +80,7 @@ def get_upload_url(body:UploadURLRequest, user : TokenData = Depends(get_current
             ))
         )
 
-
-@router.post("/confirm")
+@router.post("/confirm", response_model=APIResponse)
 def confirm_upload(file: ConfirmUploadRequest, body: SaveResumeRequest,
 user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
@@ -125,3 +127,83 @@ user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
             success=False,
             message=f"Unexpected Error Occured: {str(e)}"
         )))
+
+
+@router.delete("/delete/{resume_id}", response_model=APIResponse)
+def delete_resume(resume_id: int, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+
+        resume = crud.fetch_resume(db, resume_id, user.id)
+
+        if not resume:
+            raise HTTPException(
+                status_code=404,
+                detail="Resume not found"
+            )
+
+        file_path = resume.file_url
+
+        response = remove_file(os.getenv("SUPABASE_CV_BUCKET"), [file_path])
+
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail="Could not delete file"
+            )
+
+        crud.delete_resume(db, resume_id, user.id)
+
+        return JSONResponse(
+            status_code=200,
+            content=jsonable_encoder(APIResponse(
+                success=True,
+                message="Resume Deleted"
+            ))
+        )
+
+    except HTTPException as e:
+        return JSONResponse(
+            status_code=e.status_code,
+            content=jsonable_encoder(APIResponse(
+                success=False,
+                message=e.detail
+            ))
+        )
+
+
+@router.get("/fetch/{resume_id}", response_model=APIResponse)
+def fetch_resume(resume_id: int, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        resume = crud.fetch_resume(db, resume_id, user.id)
+
+        if not resume:
+            raise HTTPException(
+                404,
+                "Resume not found"
+            )
+        
+        view_url = get_signed_view_url(os.getenv("SUPABASE_CV_BUCKET"), resume.file_url, 60*3)
+
+        if not view_url:
+            raise HTTPException(
+                404,
+                "Resume not found in storage"
+            )
+        
+        return JSONResponse(
+            jsonable_encoder(APIResponse(
+                success=True,
+                message="Resume Fetched",
+                data=view_url
+            )),
+            200
+        )
+    
+    except HTTPException as e:
+        return JSONResponse(
+            status_code=e.status_code,
+            content=jsonable_encoder(APIResponse(
+                success=False,
+                message=e.detail
+            ))
+        )
