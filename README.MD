@@ -8,6 +8,8 @@
     - ~~update profile~~
     - ~~upload avatar~~
     - ~~education~~
+    - Resume 
+        - ~~save to supabase storage via signed url, confirm url and save entry to db~~
     - experience
     - skills
     - projects
