@@ -50,6 +50,12 @@ class User(Base):
 		cascade="all, delete-orphan"
 	)
 
+	resumes = relationship(
+		"Resume",
+		back_populates="user",
+		cascade="all, delete-orphan"
+	)
+
 class UserSession(Base):
 	__tablename__="user_sessions"
 
