@@ -17,7 +17,7 @@ from app.services.files import upload_avatar, delete_avatar
 
 router = APIRouter()
 
-@router.post("/update", response_model=APIResponse)
+@router.put("/update", response_model=APIResponse)
 def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: TokenData = Depends(get_current_user)):
     try:
         updated_profile = crud.upload_profile(db, body, user.id)
@@ -51,7 +51,7 @@ def update_profile(body: ProfileBase, db: Session = Depends(get_db), user: Token
 
 ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 MAX_SIZE = 5 * 1024 * 1024
-@router.post("/avatar")
+@router.put("/avatar")
 async def update_avatar(file: UploadFile = File(...), user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
     #  ("FILE: ",file)
     #  ("USER: ", user)
