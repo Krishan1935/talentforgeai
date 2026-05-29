@@ -12,10 +12,10 @@ load_dotenv()
 
 from app.config import get_db
 from app.services import crud
-from app.services.files.storage import get_signed_upload_url
+from app.services.files.storage import get_signed_upload_url, confirm_upload_url
 from app.schemas.user import APIResponse
 from app.schemas.auth import TokenData
-from app.schemas.resume import UploadURLRequest
+from app.schemas.resume import UploadURLRequest, ConfirmUploadRequest, SaveResumeRequest, SaveResumeResponse
 from app.utils import get_current_user
 from app.config.Supabase import supabase
 
@@ -76,3 +76,49 @@ def get_upload_url(body:UploadURLRequest, user : TokenData = Depends(get_current
                 message=f"Unexpected Error Occured: {str(e)}"
             ))
         )
+
+
+@router.post("/confirm")
+def confirm_upload(file: ConfirmUploadRequest, body: SaveResumeRequest,
+user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        response = confirm_upload_url(os.getenv("SUPABASE_CV_BUCKET"), file.file_key)
+
+        print("\n\n", file.file_key.split("/", 1)[0])
+        if not response:
+            raise HTTPException(
+                404,
+                "File not found in storage"
+            )
+
+        resume = crud.save_resume(db, body, user.id)
+
+        return JSONResponse(
+            status_code=200,
+            content=jsonable_encoder(APIResponse(
+                success=True,
+                message="Resume Saved Succesfully",
+                data=SaveResumeResponse.model_validate(resume)
+            ))
+        )
+    except HTTPException as e:
+        return JSONResponse(
+            status_code=e.status_code,
+            content=jsonable_encoder(APIResponse(
+            success=False,
+            message=f"{e.detail}"
+        )))
+    except IntegrityError:
+        return JSONResponse(
+            status_code=500,
+            content=jsonable_encoder(APIResponse(
+            success=False,
+            message=f"Cannot save file to database"
+        )))
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content=jsonable_encoder(APIResponse(
+            success=False,
+            message=f"Unexpected Error Occured: {str(e)}"
+        )))
