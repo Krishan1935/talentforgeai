@@ -57,6 +57,18 @@ class User(Base):
 		cascade="all, delete-orphan"
 	)
 
+	experiences = relationship(
+		"Experience",
+		back_populates="user",
+		cascade="all, delete-orphan"
+	)
+
+	projects = relationship(
+		"Project",
+		back_populates="user",
+		cascade="all, delete-orphan"
+	)
+
 class UserSession(Base):
 	__tablename__="user_sessions"
 
