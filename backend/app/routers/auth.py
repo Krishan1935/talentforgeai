@@ -7,7 +7,7 @@ import jwt
 import os
 import logging
 from argon2.exceptions import VerifyMismatchError
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 import pyotp
 import time
 import uuid
@@ -185,9 +185,11 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 	token_hash = hash_password_reset_token(token)
 	reset_session = crud.get_password_reset_token(db, token_hash)
 
-	if not reset_session or reset_session.used or reset_session.expires_at < datetime.utcnow():
+	if not reset_session or reset_session.used or reset_session.expires_at < datetime.now(UTC):
+		print("\n\n EXPIRY TIME: ", reset_session.expires_at)
+		print("\n\n CURRENT TIME UTC: ", datetime.now(UTC))
 		return JSONResponse(
-			status=400,
+			status_code=400,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Invalid or expired password reset token",
@@ -197,7 +199,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 
 	if data.new_password != data.confirm_password:
 		return JSONResponse(
-			status=400,
+			status_code=400,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Both the passwords must match",
@@ -209,7 +211,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 
 	if not user:
 		return JSONResponse(
-			status=404,
+			status_code=404,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="User does not exist",
@@ -222,7 +224,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 	except IntegrityError as e:
 		db.rollback()
 		return JSONResponse(
-			status=500,
+			status_code=500,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Couldn't Update Password",
@@ -231,7 +233,7 @@ async def reset_password(token: str, data: ForgotPasswordRequest, db: Session = 
 		)
 	except Exception as e:
 		return JSONResponse(
-			status=500,
+			status_code=500,
 			content=jsonable_encoder(APIResponse(
 				success=False,
 				message="Internal Server Error",

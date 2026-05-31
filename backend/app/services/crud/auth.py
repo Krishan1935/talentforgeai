@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, delete, select, func
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, UTC
 from typing import Optional
 from app import models, schemas
 from app.utils import hash_password, REFRESH_TOKEN_EXPIRE_DAYS
@@ -42,7 +42,7 @@ def create_user_session(db: Session, user_session: schemas.UserSession):
 		device_name = user_session.device_name,
 		ip_address = user_session.ip_address,
 		is_revoked=False,
-		expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+		expires_at = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
 		session_id = user_session.session_id
 	)
 	db.add(db_session)
@@ -58,7 +58,7 @@ def revoke_session(db: Session,  session_id: str):
 		return
 
 	session.is_revoked = True
-	session.revoked_at = func.now()
+	session.revoked_at =   datetime.now(UTC)
 	db.commit()
 	db.refresh(session)
 
@@ -69,7 +69,7 @@ def revoke_ip_sessions(db: Session, ip: str, user_id: int):
 		UserSession.user_id == user_id)\
 			.update({
 				"is_revoked":True,
-				"revoked_at":func.now()
+				"revoked_at":  datetime.now(UTC)
 			})
 	
 	db.commit()
@@ -83,7 +83,7 @@ def save_password_reset_token(db: Session, user_id: int, token: Optional[str] = 
 	db_token = PasswordResetToken(
 		user_id= user_id,
 		token_hash= token,
-		expires_at= datetime.utcnow() + timedelta(minutes=15)
+		expires_at= datetime.now(UTC) + timedelta(minutes=15)
 	)
 
 	db.add(db_token)
@@ -113,7 +113,7 @@ def update_password(db: Session, password: str, user: User):
 	db.query(UserSession).filter(UserSession.user_id == user.id)\
 	.update({
 		UserSession.is_revoked: True,
-		UserSession.revoked_at: datetime.utcnow()
+		UserSession.revoked_at: datetime.now(UTC)
 	})
 
 	db.commit()

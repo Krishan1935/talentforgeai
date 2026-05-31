@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, func
 from sqlalchemy.orm import relationship
 from ..config import Base 
+from datetime import datetime, UTC
 
 class User(Base):
 	__tablename__ = "users"
@@ -24,8 +25,8 @@ class User(Base):
 
 	password_changed_at=Column(DateTime(timezone=True),nullable=True)
 
-	created_at=Column(DateTime(timezone=True), server_default=func.now())
-	updated_at=Column(DateTime(timezone=True), server_default=func.now())
+	created_at=Column(DateTime(timezone=True),  default=datetime.now(UTC))
+	updated_at=Column(DateTime(timezone=True),  default=datetime.now(UTC))
 	deleted_at=Column(DateTime(timezone=True))
 
 	provider=Column(String(100), nullable=True)
@@ -65,7 +66,7 @@ class UserSession(Base):
 	device_name=Column(String(255), nullable=True)
 	ip_address=Column(String(45), nullable=True)
 	is_revoked=Column(Boolean, default=False)
-	created_at=Column(DateTime(timezone=True), server_default=func.now())
+	created_at=Column(DateTime(timezone=True), default=datetime.now(UTC))
 	revoked_at=Column(DateTime(timezone=True), nullable=True)
 	expires_at=Column(DateTime(timezone=True))
 	session_id=Column(String(255), nullable=False)

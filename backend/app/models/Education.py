@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, func, Date
 from sqlalchemy.orm import relationship
 from ..config import Base 
+from datetime import datetime, UTC
 
 
 class Education(Base):
@@ -16,7 +17,7 @@ class Education(Base):
     grade = Column(String(50), nullable=True)
     description = Column(Text, nullable=True)
     is_current = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), default= datetime.now(UTC))
+    updated_at = Column(DateTime(timezone=True), onupdate= datetime.now(UTC))
     
     user = relationship("User", back_populates="educations")
