@@ -9,7 +9,7 @@ from authlib.integrations.starlette_client import OAuth
 
 from app import models
 from app.config import engine, Base
-from app.routers import users, auth, profile, education, resume
+from app.routers import users, auth, profile, education, resume, project
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,3 +31,4 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
 app.include_router(education.router, prefix="/education", tags=["education"])
 app.include_router(resume.router, prefix="/resume", tags=["resume"])
+app.include_router(project.router, prefix="/project", tags=["project"])
