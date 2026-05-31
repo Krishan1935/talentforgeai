@@ -89,7 +89,7 @@ def Update_project(project_id: int, body: ProjectBase, user: TokenData = Depends
                 "Project cannot have a end date if it is ongoing"
             )
         
-        if body.end_date < body.start_date:
+        if body.end_date and body.end_date < body.start_date:
             return HTTPException(
                 400,
                 "End date cannot be before start date"
