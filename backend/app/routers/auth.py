@@ -10,6 +10,7 @@ from argon2.exceptions import VerifyMismatchError
 from datetime import datetime, timezone
 import pyotp
 import time
+import uuid
 
 from app.config import get_db, oauth, send_mail, EmailSchema, redis_client
 from app import schemas, models
@@ -72,10 +73,12 @@ async def google_callback(request: Request, response: Response, db: Session = De
 	        # race condition or duplicate -- just fetch the existing user
 	        db_user = crud.get_user_by_email(db, email=user_info['email'])
 
+	session_id = str(uuid.uuid4())
 	data = {
 	"id": db_user.id,
 	"email":db_user.email,
-	"username":db_user.username
+	"username":db_user.username,
+	"session_id":session_id
 	}
 	access_token = create_access_token(data)
 	refresh_token = create_refresh_token(data)
@@ -87,7 +90,8 @@ async def google_callback(request: Request, response: Response, db: Session = De
 		user_id=db_user.id,
 		refresh_token_hash=refresh_token_hash,
 		device_name=device_name,
-		ip_address=ip
+		ip_address=ip,
+		session_id=session_id
 	))
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
