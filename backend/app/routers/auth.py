@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi.encoders import jsonable_encoder
+from dotenv import load_dotenv
 import jwt
 import os
 import logging
@@ -11,6 +12,8 @@ from datetime import datetime, timezone, UTC
 import pyotp
 import time
 import uuid
+import httpx
+import json
 
 from app.config import get_db, oauth, send_mail, EmailSchema, redis_client
 from app import schemas, models
@@ -27,7 +30,7 @@ from app.schemas import (UserResponse, UserCreate,
 	OTPRequest, OTPVerify)
 from app.services import redis
 
-
+load_dotenv()
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
@@ -96,13 +99,123 @@ async def google_callback(request: Request, response: Response, db: Session = De
 
 	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
 
-	return JSONResponse(
-		status_code=200,
-		content=jsonable_encoder(APIResponse(
+	return APIResponse(
 			success=True,
 			message="Googel Login Succesful",
 			data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
-	)))
+	)
+
+
+GH_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GH_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+GH_SECRET=os.getenv("GITHUB_SECRET")
+redirect_url_gh = "http://localhost:8000/auth/github/callback"
+
+@router.get("/github/login")
+async def github_login(request: Request, db: Session = Depends(get_db)):
+
+	url = f"https://github.com/login/oauth/authorize?client_id={GH_CLIENT_ID}&redirect_uri={redirect_url_gh}&scope=read:user,user:email&state={GH_SECRET}"
+
+	return RedirectResponse(url)
+
+
+@router.get("/github/callback/")
+async def github_callback(code: str, state: str,request: Request, response: Response, db: Session = Depends(get_db)):
+	url = f"https://github.com/login/oauth/access_token?client_id={GH_CLIENT_ID}&client_secret={GH_CLIENT_SECRET}&code={code}&redirect_uri={redirect_url_gh}"
+
+	async with httpx.AsyncClient() as client:
+		github_response = await client.post(
+			url,
+			headers={
+				"Accept":"application/json"
+			}
+		)
+	
+	print("token ka response: ", github_response.json())
+	token_response = github_response.json()
+	access_token = token_response.get("access_token")
+
+	if not access_token:
+		raise HTTPException(
+			404,
+			"Cannot login with github! Try again later"
+		)
+
+
+	async with httpx.AsyncClient() as client:
+		user_response = await client.get(
+			"https://api.github.com/user",
+			headers={
+				"Authorization":f"Bearer {access_token}",
+				"Accept":"application/vnd.github+json"
+			}
+		)
+		
+		user_data = user_response.json()
+
+		email = user_data.get("email")
+
+		if not email:
+			email_response = await client.get(
+				"https://api.github.com/user/emails",
+				headers={
+					"Authorization":f"Bearer {access_token}"
+				}
+			)
+			emails = email_response.json()
+			print("\n\nEmail Response: ", emails)
+			email = next(
+				(e["email"] for e in emails if e["primary"] and e["verified"]),
+				None
+			)
+			user_data["email"] = email
+
+	db_user = crud.get_user_by_email(db, email)
+
+	if not db_user:
+		try:
+			db_user = crud.create_oauth_user(db, OAuthUserCreate(
+				email= user_data['email'],
+				fullname= user_data.get('name') or user_data['login'],
+				provider= "github",
+				provider_id=str(user_data['id']),
+			))
+		except IntegrityError:
+			db.rollback()
+			# race condition or duplicate - fetch the existing user
+			db_user = crud.get_user_by_email(db, email=user_info['email'])
+
+	session_id = str(uuid.uuid4())
+	data = {
+	"id": db_user.id,
+	"email":db_user.email,
+	"username":db_user.username,
+	"session_id":session_id
+	}
+	ip = request.client.host
+
+	access_token = create_access_token(data)
+	refresh_token = create_refresh_token(data)
+	refresh_token_hash = hash_refresh_token(refresh_token)
+
+	device_name = request.headers.get("X-Device-Name")
+
+	crud.create_user_session(db, UserSession(
+		user_id=db_user.id,
+		refresh_token_hash=refresh_token_hash,
+		device_name=device_name,
+		ip_address=ip,
+		session_id=session_id
+	))
+
+	response.set_cookie(key=REFRESH_TOKEN_COOKIE_NAME, value=refresh_token, httponly=True, secure=False, max_age=30*24*60*60)
+
+	return APIResponse(
+			success=True,
+			message="Github Login Succesful",
+			data=AuthResponse(user=db_user, access_token=access_token, token_type="bearer")
+	)
+
 
 # forgot password
 @router.post("/password/reset", response_model=APIResponse)
