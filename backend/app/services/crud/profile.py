@@ -25,7 +25,8 @@ def upload_profile(db: Session, profile: ProfileBase, user_id: int):
         existing.date_of_birth,
         existing.gender,
         existing.linkedin_link,
-        existing.github_link
+        existing.github_link,
+        existing.skills
     ]
 
     filled = sum(1 for value in fields if value is not None and value != "")

@@ -38,6 +38,7 @@ def create_user(db: Session, user: schemas.UserCreate):
 			gender = profile.gender,
 			github_link = profile.github_link,
 			linkedin_link = profile.linkedin_link,
+			skills = profile.skills,
 			profile_progress = int((filled/total)*100) if total > 0 else 0
 		)
 
