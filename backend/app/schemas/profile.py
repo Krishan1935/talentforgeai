@@ -11,9 +11,7 @@ class ProfileBase(BaseModel):
 	gender: Optional[str] = None
 	github_link: Optional[str] = None
 	linkedin_link: Optional[str] = None
-
-class ProfileCreate(ProfileBase):
-	pass 
+	skills: Optional[list[str]] = None
 
 class ProfileResponse(ProfileBase):
 	id: int
