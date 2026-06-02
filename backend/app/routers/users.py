@@ -15,7 +15,7 @@ from app.services import redis
 # from app import schemas, models
 import app.schemas, app.models
 from app.services import crud
-from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token,get_current_user
+from app.utils import create_access_token, create_refresh_token, verify_password, hash_refresh_token,get_current_user, is_admin
 from app.schemas import UserResponse, UserCreate, AuthResponse, AuthBase ,UserSession, APIResponse, TokenData
 
 router = APIRouter()
@@ -226,13 +226,27 @@ async def logout(request: Request, response: Response, user: TokenData = Depends
 	)))
 
 @router.get("/get-all", response_model=APIResponse)
-def fetch_all(response: Response, db: Session=Depends(get_db)):
-	userList = crud.get_all_users(db)
-	users = jsonable_encoder(userList)
-	return JSONResponse(
-		status_code=200,
-		content=jsonable_encoder(APIResponse(
-		success= True,
-		message= "All Users",
-		data= user
-	)))
+def fetch_all(response: Response, db: Session=Depends(get_db), admin: bool = Depends(is_admin)):
+	try:
+		if not admin:
+			raise HTTPException(
+				403, 
+				"Access Denied"
+			)
+		userList = crud.get_all_users(db)
+		users = jsonable_encoder([UserResponse.model_validate(user).model_dump() for user in userList])
+		return JSONResponse(
+			status_code=200,
+			content=jsonable_encoder(APIResponse(
+				success= True,
+				message= "All Users",
+				data= users
+		)))
+	except HTTPException as e:
+		return JSONResponse(
+			jsonable_encoder(APIResponse(
+				success=False,
+				message=e.detail,
+			)),
+			e.status_code
+		)

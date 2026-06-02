@@ -58,3 +58,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> TokenDa
             status_code=401,
             detail="Invalid Token"
         )
+
+
+def is_admin(request: Request, user: TokenData = Depends(get_current_user), db: Session = Depends(get_db)) -> bool:
+    user = crud.get_user(db, user.id)
+
+    return True if user.role == 'admin' else False

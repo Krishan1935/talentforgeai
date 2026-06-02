@@ -12,6 +12,6 @@
         - ~~save to supabase storage via signed url, confirm url and save entry to db~~
         - ~~delete and fetch resume~~
     - ~~experience ~~
-    - skills
+    - ~~skills~~
     - ~~projects~~
-    - github & linkedin links
+    - ~~github & linkedin links~~
