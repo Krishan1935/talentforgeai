@@ -1,6 +1,6 @@
 # TalentForgeAI
 
-## Phase 1
+## Phase 1 (Completed)
 - Email/password auth
 - Google OAuth , Github OAuth
 - JWT + reresh & access tokens
