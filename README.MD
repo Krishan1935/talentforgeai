@@ -1,17 +1,11 @@
-# Todo
-- ~~update login routine so that if a user with provider `google` tries to login with email, doo something...~~
-- ~~create forgot password, change password apis~~
+# TalentForgeAI
 
-- ~~add email verification (OTP)~~
-
-- Profile
-    - ~~update profile~~
-    - ~~upload avatar~~
-    - ~~education~~
-    - Resume 
-        - ~~save to supabase storage via signed url, confirm url and save entry to db~~
-        - ~~delete and fetch resume~~
-    - ~~experience ~~
-    - ~~skills~~
-    - ~~projects~~
-    - ~~github & linkedin links~~
+## Phase 1
+- Email/password auth
+- Google OAuth , Github OAuth
+- JWT + reresh & access tokens
+- OTP + password reset
+- Rate Limiting (redis)
+- Avatar upload (Cloudinary)
+- Resume storage (supabase)
+- Education CRUD, Experience CRUD, Project CRUD, Profile CRUD
